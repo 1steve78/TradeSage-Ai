@@ -35,4 +35,4 @@ const registerSocketHandlers = (io) => {
   })
 }
 
-module.exports = registerSocketHandlers
+export default registerSocketHandlers;
