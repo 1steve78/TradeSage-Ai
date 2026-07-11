@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import authRoutes from "./routes/authRoutes.js"; // Notice the .js extension!
+
+import authRoutes from "./routes/authRoutes.js"; 
+import marketRoutes from "./routes/marketRoutes.js";
+import watchlistRoutes from "./routes/watchlistRoutes.js";
 
 const app = express();
 
@@ -16,6 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Health Check Route
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
@@ -23,6 +27,9 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+// API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/stocks", marketRoutes);
+app.use("/api/watchlists", watchlistRoutes);
 
-export default app; // Replaced module.exports
+export default app;

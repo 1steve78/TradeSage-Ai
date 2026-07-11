@@ -5,8 +5,34 @@ const useAuthStore = create((set) => ({
     user: null,
     accessToken: null,
     isAuthenticated: false,
+    isCheckingAuth: true,
     loading: false,
     error: null,
+
+    checkAuth: async () => {
+        try {
+            set({ isCheckingAuth: true, error: null });
+            const refreshResponse = await api.get("/auth/refresh-token");
+            const accessToken = refreshResponse.data.accessToken;
+
+            set({ accessToken });
+
+            const profileResponse = await api.get("/auth/me");
+
+            set({
+                user: profileResponse.data.user,
+                isAuthenticated: true,
+                isCheckingAuth: false,
+            });
+        } catch (error) {
+            set({
+                user: null,
+                accessToken: null,
+                isAuthenticated: false,
+                isCheckingAuth: false,
+            });
+        }
+    },
     
     login  : async (email,password)=>{
         try{

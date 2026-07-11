@@ -3,7 +3,7 @@ dotenv.config();
 
 import http from 'http';
 import { Server } from 'socket.io';
-import cookieParser from "cookie-parser";
+
 
 import app from './app.js'; 
 import connectMongo from './config/database.js'; 
@@ -18,7 +18,7 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
-app.use(cookieParser());
+
 
 registerSocketHandlers(io);
 console.log('Socket server initialized');

@@ -1,7 +1,13 @@
-// events.js
+export const EVENTS = {
+  CONNECTION: "connection",
+  DISCONNECT: "disconnect",
 
-module.exports = {
-    PRICE_UPDATE: "price:update",
-    JOIN_WATCHLIST: "watchlist:join",
-    LEAVE_WATCHLIST: "watchlist:leave",
+  JOIN_WATCHLIST: "join-watchlist",
+  LEAVE_WATCHLIST: "leave-watchlist",
+
+  PRICE_UPDATE: "price-update",
+
+  MARKET_STATUS: "market-status",
+
+  ERROR: "error",
 };

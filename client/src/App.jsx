@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import useAuthStore from './store/authStore';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -10,6 +12,12 @@ import Watchlist from './pages/Watchlist';
 import NotFound from './pages/NotFound';
 
 function App() {
+  const { checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
   return (
     <Routes>
       {/* Landing Page Route */}
