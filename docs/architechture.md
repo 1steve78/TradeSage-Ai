@@ -15,3 +15,35 @@ React <--------> Express
                     |
                     v
                MongoDB
+
+---
+
+# Real-time Price Update Flow
+
+```text
+Market API
+
+↓
+
+Market Service
+
+↓
+
+Socket Server
+
+↓
+
+Rooms
+
+↓
+
+React Socket Context
+
+↓
+
+Market Store
+
+↓
+
+UI
+```

@@ -1,25 +1,35 @@
-import SearchBar from "../components/SearchBar/SearchBar";
-import WatchlistSidebar from "../components/Watchlist/WatchlistSidebar";
-import StockList from "../components/Watchlist/StockList";
+import StatCards from "../components/Dashboard/StatCards";
+import MarketChart from "../components/Dashboard/MarketChart";
+import AIMarketPulse from "../components/Dashboard/AIMarketPulse";
+import RecentTrades from "../components/Dashboard/RecentTrades";
+import PriorityWatchlist from "../components/Dashboard/PriorityWatchlist";
+import MarketMovers from "../components/Dashboard/MarketMovers";
+import InstitutionalNews from "../components/Dashboard/InstitutionalNews";
+import SystemStatus from "../components/Dashboard/SystemStatus";
 
 const Dashboard = () => {
   return (
-    <div className="flex h-screen">
+    <div className="space-y-6">
+      {/* Top 3 Summary Cards */}
+      <StatCards />
 
-      <WatchlistSidebar />
-
-      <main className="flex-1 overflow-auto">
-
-        <div className="border-b p-4">
-
-          <SearchBar />
-
+      {/* Grid: Left Column (Chart, AI, Trades) and Right Column (Watchlist, Movers, News, Status) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left Column (3/4 Width) */}
+        <div className="lg:col-span-3 space-y-6">
+          <MarketChart />
+          <AIMarketPulse />
+          <RecentTrades />
         </div>
 
-        <StockList />
-
-      </main>
-
+        {/* Right Column (1/4 Width) */}
+        <div className="lg:col-span-1 space-y-6">
+          <PriorityWatchlist />
+          <MarketMovers />
+          <InstitutionalNews />
+          <SystemStatus />
+        </div>
+      </div>
     </div>
   );
 };

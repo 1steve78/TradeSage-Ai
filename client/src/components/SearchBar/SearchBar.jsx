@@ -32,13 +32,16 @@ const SearchBar = () => {
   };
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className="relative w-full">
+      <span className="material-symbols-outlined absolute left-3 top-2 text-slate-400 text-base font-semibold pointer-events-none">
+        search
+      </span>
       <input
         type="text"
-        placeholder="Search stocks..."
+        placeholder="Search markets, assets, or symbols..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full rounded-lg border p-3 outline-none"
+        className="w-full rounded-[4px] bg-[#f2f4f6] border border-transparent py-2 pl-9 pr-4 text-xs outline-none text-[#0f172a] placeholder-slate-400 font-semibold focus:border-[#0f172a] focus:bg-white transition-all duration-150"
       />
 
       {search.trim() !== "" && (

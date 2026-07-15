@@ -1,38 +1,37 @@
-const registerSocketHandlers = (io) => {
-  io.on('connection', (socket) => {
-    console.log(`client connected: ${socket.id}`)
+import { EVENTS } from "../constants/events.js";
+import { registerMarketEvents, startMarketBroadcast } from "./marketSocket.js";
+import { registerWatchlistEvents } from "./watchlistSocket.js";
 
-    socket.on('join-room', (roomName) => {
-      if (!roomName) {
-        return
-      }
+export const initializeSocket = (io) => {
+  // Start the global market broadcast loop
+  startMarketBroadcast(io);
 
-      socket.join(roomName)
-      socket.emit('joined-room', roomName)
-    })
+  io.on(EVENTS.CONNECTION, (socket) => {
+    console.log(`✅ Client Connected: ${socket.id}`);
 
-    socket.on('leave-room', (roomName) => {
-      if (!roomName) {
-        return
-      }
+    // Register external modules
+    registerMarketEvents(socket);
+    registerWatchlistEvents(socket);
+    
+    // Join Room
+    socket.on(EVENTS.JOIN_ROOM, (roomName) => {
+      if (!roomName || typeof roomName !== 'string') return;
+      socket.join(roomName);
+      socket.emit(EVENTS.JOINED_ROOM, roomName);
+    });
 
-      socket.leave(roomName)
-      socket.emit('left-room', roomName)
-    })
+    // Leave Room
+    socket.on(EVENTS.LEAVE_ROOM, (roomName) => {
+      if (!roomName || typeof roomName !== 'string') return;
+      socket.leave(roomName);
+      socket.emit(EVENTS.LEFT_ROOM, roomName);
+    });
 
-    socket.on('price-update', ({ roomName, payload } = {}) => {
-      if (roomName) {
-        io.to(roomName).emit('price-update', payload ?? {})
-        return
-      }
+    // Disconnect
+    socket.on(EVENTS.DISCONNECT, () => {
+      console.log(`❌ Client Disconnected: ${socket.id}`);
+    });
+  });
+};
 
-      io.emit('price-update', payload ?? {})
-    })
-
-    socket.on('disconnect', () => {
-      console.log(`client disconnected: ${socket.id}`)
-    })
-  })
-}
-
-export default registerSocketHandlers;
+export default initializeSocket;

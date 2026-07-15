@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 
 import app from './app.js'; 
 import connectMongo from './config/database.js'; 
-import registerSocketHandlers from './sockets/socketHandler.js'; 
+import {initializeSocket} from './sockets/socketHandler.js'; 
 
 const PORT = process.env.PORT || 5000;
 const httpServer = http.createServer(app);
@@ -19,8 +19,7 @@ const io = new Server(httpServer, {
   },
 });
 
-
-registerSocketHandlers(io);
+initializeSocket(io);
 console.log('Socket server initialized');
 
 const startServer = async () => {

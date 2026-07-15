@@ -1,20 +1,55 @@
-import  {create} from "zustand";
+import { create } from "zustand";
 
-const useMarketStore = create((set)=>({
-    loading : false,
-    error : null,
-    data : [],
+const useMarketStore = create((set) => ({
+  prices: {},
 
-    setLoading : (loading)=>set({loading}),
-    setError : (error)=>set({error}),
-    setData : (data)=>set({data}),
+  connected: false,
 
-    reset:()=>
-        set({
-            loading: false,
-            error:null,
-            data:[],
-        }),
+  marketStatus: "OPEN",
+
+  lastUpdated: null,
+
+  connect: () =>
+    set({
+      connected: true,
+    }),
+
+  disconnect: () =>
+    set({
+      connected: false,
+    }),
+
+  updateManyPrices: (prices) =>
+    set((state) => {
+        const updated = {
+        ...state.prices,le
+        };
+
+        prices.forEach((stock) => {
+        const previous =
+            state.prices[stock.symbol];
+
+        updated[stock.symbol] = {
+            ...stock,
+            previousPrice:
+            previous?.price ?? stock.price,
+        };
+    });
+
+    return {
+      prices: updated,
+      lastUpdated: Date.now(),
+    };
+  }),
+
+  updatePrice: (price) =>
+    set((state) => ({
+      prices: {
+        ...state.prices,
+        [price.symbol]: price,
+      },
+      lastUpdated: Date.now(),
+    })),
 }));
 
 export default useMarketStore;

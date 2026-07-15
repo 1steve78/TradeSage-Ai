@@ -1,5 +1,6 @@
-import { searchStocks } from "./services/marketService.js";
+import { generatePrices } from "./services/mockMarketService.js";
 
-const data = await searchStocks("apple");
-console.log(data);
-
+setInterval(() => {
+    console.clear();
+    console.table(generatePrices());
+}, 1000);

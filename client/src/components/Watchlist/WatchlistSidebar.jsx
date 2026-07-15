@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import useWatchlistStore from "../../store/watchlistStore";
+import useMarketStore from "../../store/marketStore";
+import { useSocket } from "../../context/SocketContext";
 import CreateWatchlistModal from "./CreateWatchlistModel";
 import WatchlistItem from "./WatchlistItem";
 
@@ -13,11 +15,30 @@ const WatchlistSidebar = () => {
     setSelectedWatchlist,
   } = useWatchlistStore();
 
+  const { joinWatchlist, leaveWatchlist } = useSocket();
+  const { subscribedWatchlist, setSubscribedWatchlist } = useMarketStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchWatchlists();
   }, []);
+
+  // Room subscription logic on watchlist change
+  useEffect(() => {
+    const newId = selectedWatchlist?._id || null;
+
+    if (subscribedWatchlist && subscribedWatchlist !== newId) {
+      console.log(`Leaving watchlist room: ${subscribedWatchlist}`);
+      leaveWatchlist(subscribedWatchlist);
+      setSubscribedWatchlist(null);
+    }
+
+    if (newId && subscribedWatchlist !== newId) {
+      console.log(`Joining watchlist room: ${newId}`);
+      joinWatchlist(newId);
+      setSubscribedWatchlist(newId);
+    }
+  }, [selectedWatchlist, subscribedWatchlist, joinWatchlist, leaveWatchlist, setSubscribedWatchlist]);
 
   // ADDED: The missing handler to open the modal
   const handleCreate = () => {
@@ -25,17 +46,17 @@ const WatchlistSidebar = () => {
   };
 
   return (
-    <aside className="w-72 border-r h-screen p-4">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold">
+    <aside className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white tracking-wide">
           Watchlists
         </h2>
 
         <button
           onClick={handleCreate}
-          className="rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700 transition"
+          className="rounded-lg bg-cyan-400 text-slate-950 px-3 py-1 text-sm font-semibold hover:bg-cyan-300 transition cursor-pointer shadow-sm shadow-cyan-400/25"
         >
-          +
+          + Create
         </button>
       </div>
 

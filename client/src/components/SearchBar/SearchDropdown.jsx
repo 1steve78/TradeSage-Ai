@@ -3,7 +3,7 @@ import SearchResultItem from "./SearchResultItem";
 const SearchDropdown = ({ stocks, loading, error, onSelect }) => {
   if (loading) {
     return (
-      <div className="absolute mt-2 w-full rounded-lg border bg-white shadow-lg p-4 text-gray-500">
+      <div className="absolute z-50 mt-2 w-full rounded-[4px] border border-[#cbd5e1] bg-white p-4 text-slate-500 text-xs font-semibold">
         Searching...
       </div>
     );
@@ -11,7 +11,7 @@ const SearchDropdown = ({ stocks, loading, error, onSelect }) => {
 
   if (error) {
     return (
-      <div className="absolute mt-2 w-full rounded-lg border bg-white shadow-lg p-4 text-red-500">
+      <div className="absolute z-50 mt-2 w-full rounded-[4px] border border-red-200 bg-red-50 p-4 text-red-700 text-xs font-semibold">
         {error.message}
       </div>
     );
@@ -19,14 +19,14 @@ const SearchDropdown = ({ stocks, loading, error, onSelect }) => {
 
   if (stocks.length === 0) {
     return (
-      <div className="absolute mt-2 w-full rounded-lg border bg-white shadow-lg p-4 text-gray-500">
+      <div className="absolute z-50 mt-2 w-full rounded-[4px] border border-[#cbd5e1] bg-white p-4 text-slate-500 text-xs font-semibold">
         No stocks found
       </div>
     );
   }
 
   return (
-    <div className="absolute z-50 mt-2 w-full rounded-lg border bg-white shadow-lg overflow-hidden max-h-96 overflow-y-auto">
+    <div className="absolute z-50 mt-2 w-full rounded-[4px] border border-[#cbd5e1] bg-white overflow-hidden max-h-64 overflow-y-auto shadow-sm">
       {stocks.map((stock) => (
         <SearchResultItem
           key={stock.symbol}
