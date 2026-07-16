@@ -2,6 +2,7 @@ import { useState } from "react";
 import useDebounce from "../../hooks/useDebounce";
 import useStockSearch from "../../hooks/useStockSearch";
 import useWatchlistStore from "../../store/watchlistStore";
+import useTradingStore from "../../store/tradingStore";
 import SearchDropdown from "./SearchDropdown";
 
 const SearchBar = () => {
@@ -15,18 +16,25 @@ const SearchBar = () => {
   } = useStockSearch(debouncedSearch);
 
   const { selectedWatchlist, addStock } = useWatchlistStore();
+  const { selectStock } = useTradingStore();
 
   // Keep only the async version of handleStockSelect
   const handleStockSelect = async (stock) => {
-    if (!selectedWatchlist) {
-      alert("Please select a watchlist first.");
-      return;
-    }
-
-    await addStock(selectedWatchlist._id, {
+    selectStock({
       symbol: stock.symbol,
       companyName: stock.companyName,
     });
+
+    if (selectedWatchlist) {
+      try {
+        await addStock(selectedWatchlist._id, {
+          symbol: stock.symbol,
+          companyName: stock.companyName,
+        });
+      } catch (err) {
+        console.error("Auto-add to watchlist failed", err);
+      }
+    }
 
     setSearch("");
   };

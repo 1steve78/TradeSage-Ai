@@ -1,148 +1,191 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import ConnectionStatus from '../components/ConnectionStatus';
-import SearchBar from '../components/SearchBar/SearchBar';
-
-const navItems = [
-  { label: 'Dashboard', to: '/dashboard', icon: 'grid_view' },
-  { label: 'Market', to: '/watchlist', icon: 'monitoring' },
-  { label: 'Orders', to: '/orders', icon: 'receipt_long' },
-  { label: 'Portfolio', to: '/portfolio', icon: 'account_balance_wallet' },
-  { label: 'Insights', to: '/insights', icon: 'insights', isPlaceholder: true },
-];
+import { useState, useEffect } from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import useAuthStore from "../store/authStore";
+import useMarketStore from "../store/marketStore";
+import PriorityWatchlist from "../components/Dashboard/PriorityWatchlist";
+import TradeModal from "../components/Trading/TradeModal";
 
 function AppLayout() {
-  const location = useLocation();
+  const { user } = useAuthStore();
+  const prices = useMarketStore((state) => state.prices);
+  const [darkMode, setDarkMode] = useState(false);
 
-  // Get human readable title based on active path
-  const getPageTitle = () => {
-    const activeItem = navItems.find(item => item.to === location.pathname);
-    return activeItem ? activeItem.label : 'Terminal X';
+  // Live prices for marquee ticker tape
+  const getLivePrice = (symbol, defaultVal) => {
+    const liveVal = prices[symbol]?.price;
+    if (liveVal) return `₹${liveVal.toFixed(2)}`;
+    return `₹${defaultVal}`;
+  };
+
+  const getLiveChange = (symbol, defaultPct) => {
+    const liveData = prices[symbol];
+    if (liveData && liveData.previousPrice) {
+      const diff = liveData.price - liveData.previousPrice;
+      const pct = (diff / liveData.previousPrice) * 100;
+      return `${diff >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+    }
+    return defaultPct;
+  };
+
+  const isLiveUp = (symbol) => {
+    const liveData = prices[symbol];
+    if (liveData && liveData.previousPrice) {
+      return liveData.price >= liveData.previousPrice;
+    }
+    return true;
+  };
+
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle("dark");
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#191c1e] flex font-sans antialiased">
-      {/* Fixed Left Sidebar */}
-      <aside className="w-64 border-r border-[#e2e8f0] bg-white h-screen fixed left-0 top-0 flex flex-col justify-between p-6 z-30">
-        <div className="space-y-8">
-          {/* Logo / Brand Header */}
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-[32px] text-[#0f172a] font-bold">
-              query_stats
-            </span>
-            <div>
-              <h2 className="text-sm font-bold text-[#0f172a] uppercase tracking-wide leading-none">
-                Institutional Terminal
-              </h2>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1 block">
-                Verified Account
-              </span>
-            </div>
-          </div>
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8FAFC] text-[#191c1e] antialiased select-none font-sans">
+      {/* TopNavBar */}
+      <header className="flex justify-between items-center px-lg py-xs w-full bg-white border-b border-outline-variant z-40">
+        <div className="flex items-center gap-xl">
+          <NavLink to="/dashboard" className="font-display-lg text-lg font-bold text-primary tracking-tighter">
+            TradeSage AI
+          </NavLink>
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.isPlaceholder ? '#' : item.to}
-                onClick={(e) => item.isPlaceholder && e.preventDefault()}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded text-sm font-semibold tracking-wide transition-all ${
-                    !item.isPlaceholder && isActive
-                      ? 'bg-slate-100 text-[#0f172a]'
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-                  } ${item.isPlaceholder ? 'opacity-50 cursor-not-allowed' : ''}`
-                }
-              >
-                <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="hidden md:flex gap-md items-center font-body-md text-xs font-semibold">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              Terminal
+            </NavLink>
+            <NavLink
+              to="/portfolio"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              Portfolio
+            </NavLink>
+            <NavLink
+              to="/orders"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              Orders
+            </NavLink>
+          </div>
         </div>
 
-        {/* Bottom Actions & Settings */}
-        <div className="space-y-4 pt-6 border-t border-[#e2e8f0]">
-          {/* Execute Trade Action Button */}
-          <button className="w-full bg-[#0f172a] text-white text-xs font-bold uppercase tracking-wider py-3 rounded hover:bg-slate-800 transition active:scale-[0.98] cursor-pointer">
-            Execute Trade
-          </button>
+        {/* Header Right Widgets */}
+        <div className="flex items-center gap-md">
+          {/* Live indicator badge */}
+          <div className="flex items-center gap-xs px-sm py-1 bg-surface-container-low rounded border border-outline-variant">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-dot"></div>
+            <span className="font-label-caps text-[9px] text-secondary uppercase tracking-widest font-bold">Live</span>
+          </div>
 
-          <div className="flex flex-col gap-1 text-slate-500 text-sm font-semibold">
-            <NavLink
-              to="#"
-              onClick={(e) => e.preventDefault()}
-              className="flex items-center gap-3 px-4 py-2.5 rounded hover:bg-slate-50 hover:text-slate-900 transition"
-            >
+          <div className="flex items-center gap-sm">
+            <button className="p-1.5 hover:bg-surface-container-low rounded transition-colors text-slate-500 hover:text-[#0f172a] cursor-pointer" title="Notifications">
+              <span className="material-symbols-outlined text-lg">notifications</span>
+            </button>
+            <button className="p-1.5 hover:bg-surface-container-low rounded transition-colors text-slate-500 hover:text-[#0f172a] cursor-pointer" title="Settings">
               <span className="material-symbols-outlined text-lg">settings</span>
-              Settings
-            </NavLink>
-            <NavLink
-              to="#"
-              onClick={(e) => e.preventDefault()}
-              className="flex items-center gap-3 px-4 py-2.5 rounded hover:bg-slate-50 hover:text-slate-900 transition"
+            </button>
+            <button 
+              onClick={toggleTheme}
+              className="p-1.5 hover:bg-surface-container-low rounded transition-colors text-slate-500 hover:text-[#0f172a] cursor-pointer" 
+              title="Theme Toggle"
             >
-              <span className="material-symbols-outlined text-lg">support</span>
-              Support
-            </NavLink>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main Workspace Frame */}
-      <div className="flex-1 ml-64 flex flex-col min-h-screen">
-        {/* Top Header Bar */}
-        <header className="h-16 border-b border-[#e2e8f0] bg-white flex items-center justify-between px-8 sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-[#0f172a] tracking-tight">
-              Terminal X
-            </h1>
-            <span className="text-slate-300">/</span>
-            <span className="text-sm font-semibold text-slate-500">{getPageTitle()}</span>
-          </div>
-
-          {/* Search bar & User controls */}
-          <div className="flex items-center gap-6">
-            <div className="w-80">
-              <SearchBar />
-            </div>
-
-            {/* Notification and status controls */}
-            <div className="flex items-center gap-4 text-slate-600">
-              <button className="p-1.5 hover:bg-slate-100 rounded transition relative cursor-pointer">
-                <span className="material-symbols-outlined text-xl">notifications</span>
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-              <button className="p-1.5 hover:bg-slate-100 rounded transition cursor-pointer">
-                <span className="material-symbols-outlined text-xl">cast</span>
-              </button>
-              
-              {/* Live Status indicator */}
-              <ConnectionStatus />
-            </div>
-
-            {/* User Profile Info */}
-            <div className="flex items-center gap-3 pl-4 border-l border-[#e2e8f0]">
-              <div className="text-right">
-                <h4 className="text-xs font-bold text-[#0f172a] leading-none">
-                  ALEXANDER_V
+              <span className="material-symbols-outlined text-lg">
+                {darkMode ? "light_mode" : "dark_mode"}
+              </span>
+            </button>
+            
+            {/* User Profile Avatar */}
+            <div className="flex items-center gap-2 pl-3 border-l border-outline-variant/30">
+              <div className="text-right hidden sm:block">
+                <h4 className="text-[10px] font-bold text-[#0f172a] leading-none uppercase">
+                  {user?.name || "ALEXANDER_V"}
                 </h4>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1 block">
-                  Institutional Tier
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider block mt-1">
+                  Institutional
                 </span>
               </div>
-              <div className="h-8 w-8 rounded-full bg-[#dae2fd] border border-[#bec6e0] flex items-center justify-center font-bold text-xs text-[#131b2e]">
-                AV
+              <div className="h-7 w-7 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer font-bold text-xs uppercase shadow-sm">
+                {user?.name ? user.name.slice(0, 2) : "AV"}
               </div>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Dynamic Outlet Body */}
-        <main className="p-8 flex-1 overflow-x-hidden">
+      {/* Market Ticker Marquee */}
+      <div className="w-full bg-primary py-1 overflow-hidden border-b border-black">
+        <div className="ticker-scroll flex items-center gap-lg">
+          {/* Double repeat for seamless infinite loop */}
+          <div className="flex items-center gap-lg text-white font-data-mono text-xs whitespace-nowrap">
+            <span>NIFTY 50 <span className="text-green-400">22,123.45 (+0.45%)</span></span>
+            <span>SENSEX <span className="text-green-400">72,450.90 (+0.38%)</span></span>
+            <span>AAPL <span className={isLiveUp("AAPL") ? "text-green-400" : "text-red-400"}>{getLivePrice("AAPL", "212.50")} ({getLiveChange("AAPL", "+0.00%")})</span></span>
+            <span>TSLA <span className={isLiveUp("TSLA") ? "text-green-400" : "text-red-400"}>{getLivePrice("TSLA", "301.20")} ({getLiveChange("TSLA", "+0.00%")})</span></span>
+            <span>NVDA <span className={isLiveUp("NVDA") ? "text-green-400" : "text-red-400"}>{getLivePrice("NVDA", "182.60")} ({getLiveChange("NVDA", "+0.00%")})</span></span>
+            <span>BTC/USD <span className={isLiveUp("BTC") ? "text-green-400" : "text-red-400"}>{getLivePrice("BTC", "67284.10")} ({getLiveChange("BTC", "+0.00%")})</span></span>
+          </div>
+          <div className="flex items-center gap-lg text-white font-data-mono text-xs whitespace-nowrap">
+            <span>NIFTY 50 <span className="text-green-400">22,123.45 (+0.45%)</span></span>
+            <span>SENSEX <span className="text-green-400">72,450.90 (+0.38%)</span></span>
+            <span>AAPL <span className={isLiveUp("AAPL") ? "text-green-400" : "text-red-400"}>{getLivePrice("AAPL", "212.50")} ({getLiveChange("AAPL", "+0.00%")})</span></span>
+            <span>TSLA <span className={isLiveUp("TSLA") ? "text-green-400" : "text-red-400"}>{getLivePrice("TSLA", "301.20")} ({getLiveChange("TSLA", "+0.00%")})</span></span>
+            <span>NVDA <span className={isLiveUp("NVDA") ? "text-green-400" : "text-red-400"}>{getLivePrice("NVDA", "182.60")} ({getLiveChange("NVDA", "+0.00%")})</span></span>
+            <span>BTC/USD <span className={isLiveUp("BTC") ? "text-green-400" : "text-red-400"}>{getLivePrice("BTC", "67284.10")} ({getLiveChange("BTC", "+0.00%")})</span></span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Watchlist Sidebar */}
+        <aside className="hidden md:flex flex-col w-64 bg-surface-container-low border-r border-outline-variant overflow-y-auto">
+          <PriorityWatchlist />
+        </aside>
+
+        {/* Content Outlet Canvas */}
+        <main className="flex-1 overflow-y-auto p-gutter bg-[#F8FAFC]">
           <Outlet />
         </main>
       </div>
+
+      {/* Compliance & Latency Footer */}
+      <footer className="flex justify-between items-center px-lg py-md w-full bg-white border-t border-outline-variant z-40 text-xs">
+        <div className="flex items-center gap-lg">
+          <span className="font-label-caps text-[9px] text-[#0f172a] font-bold uppercase tracking-wider">
+            TradeSage Institutional
+          </span>
+          <div className="hidden sm:flex gap-md text-slate-500 font-semibold">
+            <a className="hover:text-primary underline decoration-transparent hover:decoration-primary transition" href="#">API Docs</a>
+            <a className="hover:text-primary underline decoration-transparent hover:decoration-primary transition" href="#">System Status</a>
+            <a className="hover:text-primary underline decoration-transparent hover:decoration-primary transition" href="#">Privacy Policy</a>
+          </div>
+        </div>
+        <div className="flex items-center gap-md">
+          <div className="flex items-center gap-1 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+            <span className="font-data-mono text-[10px] text-slate-500">Latency: 12ms</span>
+          </div>
+          <p className="text-slate-400 font-medium">© 2026 TradeSage Institutional. All Rights Reserved.</p>
+        </div>
+      </footer>
+
+      {/* Global Trade Modal */}
+      <TradeModal />
     </div>
   );
 }

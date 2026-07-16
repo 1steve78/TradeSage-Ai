@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
+import Portfolio from "../models/Portfolio.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -23,6 +24,9 @@ export const registerUser = async ({ name, email, password }) => {
         email,
         password: hashedPassword,
     });
+
+    // Create a portfolio for the registered user
+    await Portfolio.create({ user: user._id });
 
     // 4. Return the user data to the controller
     return {

@@ -9,6 +9,13 @@ const useMarketStore = create((set) => ({
 
   lastUpdated: null,
 
+  subscribedWatchlist: null,
+
+  setSubscribedWatchlist: (id) =>
+    set({
+      subscribedWatchlist: id,
+    }),
+
   connect: () =>
     set({
       connected: true,
@@ -21,35 +28,39 @@ const useMarketStore = create((set) => ({
 
   updateManyPrices: (prices) =>
     set((state) => {
-        const updated = {
-        ...state.prices,le
-        };
+      const updated = {
+        ...state.prices,
+      };
 
-        prices.forEach((stock) => {
-        const previous =
-            state.prices[stock.symbol];
+      prices.forEach((stock) => {
+        const previous = state.prices[stock.symbol];
 
         updated[stock.symbol] = {
-            ...stock,
-            previousPrice:
-            previous?.price ?? stock.price,
+          ...stock,
+          previousPrice: previous?.price ?? stock.price,
         };
-    });
+      });
 
-    return {
-      prices: updated,
-      lastUpdated: Date.now(),
-    };
-  }),
+      return {
+        prices: updated,
+        lastUpdated: Date.now(),
+      };
+    }),
 
   updatePrice: (price) =>
-    set((state) => ({
-      prices: {
-        ...state.prices,
-        [price.symbol]: price,
-      },
-      lastUpdated: Date.now(),
-    })),
+    set((state) => {
+      const previous = state.prices[price.symbol];
+      return {
+        prices: {
+          ...state.prices,
+          [price.symbol]: {
+            ...price,
+            previousPrice: previous?.price ?? price.price,
+          },
+        },
+        lastUpdated: Date.now(),
+      };
+    }),
 }));
 
 export default useMarketStore;

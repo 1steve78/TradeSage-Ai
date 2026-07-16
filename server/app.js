@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import authRoutes from "./routes/authRoutes.js"; 
 import marketRoutes from "./routes/marketRoutes.js";
 import watchlistRoutes from "./routes/watchlistRoutes.js";
+import tradingRoutes from "./routes/tradingRoutes.js";
+import portfolioRoutes from "./routes/portfolioRoutes.js";
 
 const app = express();
 
@@ -31,5 +33,7 @@ app.get('/api/health', (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", marketRoutes);
 app.use("/api/watchlists", watchlistRoutes);
+app.use("/api/trading",tradingRoutes);
+app.use("/api/portfolio",portfolioRoutes);
 
 export default app;
