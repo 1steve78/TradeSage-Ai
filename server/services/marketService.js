@@ -35,3 +35,21 @@ export const searchStocks = async (query) => {
 
     return stocks;
 }
+
+export const getCompanyProfile = async (symbol) => {
+    if (!process.env.FINNHUB_API_KEY) {
+        throw new Error("CRITICAL: API Key is missing inside the service file!");
+    }
+
+    if (!symbol || !symbol.trim()) {
+        throw new Error("Symbol is required");
+    }
+
+    const response = await finnhub.get('/stock/profile2', {
+        params: {
+            symbol: symbol,
+        },
+    });
+
+    return response.data;
+};

@@ -32,6 +32,7 @@ app.get('/api/health', (_req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/stocks", marketRoutes);
+app.use("/api/market", marketRoutes);
 app.use("/api/watchlists", watchlistRoutes);
 app.use("/api/trading",tradingRoutes);
 app.use("/api/portfolio",portfolioRoutes);

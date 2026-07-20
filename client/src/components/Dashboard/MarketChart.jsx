@@ -1,12 +1,123 @@
+import { useEffect, useState, useRef } from "react";
+import { createChart, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import { getStockHistory } from "../../services/marketApi";
 import useMarketStore from "../../store/marketStore";
+
+import { useHistoricalData } from "../../hooks/useHistoricalData";
 
 const MarketChart = () => {
   const pricesMap = useMarketStore((state) => state.prices);
+  const [timeframe, setTimeframe] = useState("1M");
+
+  const chartContainerRef = useRef(null);
+  const chartRef = useRef(null);
+  const candleSeriesRef = useRef(null);
+  const volumeSeriesRef = useRef(null);
 
   const btcPrice = pricesMap["BTC"]?.price ?? 67284.10;
   const btcPrev = pricesMap["BTC"]?.previousPrice ?? 67500.00;
   const btcChange = btcPrice - btcPrev;
   const btcPct = (btcChange / btcPrev) * 100;
+
+  const timeframes = ["1D", "1W", "1M", "3M", "1Y"];
+
+  const stockParam = {
+    symbol: "BTC",
+    exchange: null,
+    token: null
+  };
+
+  const { data: rawData, isLoading: loading, error: queryError } = useHistoricalData(stockParam, timeframe);
+  const error = queryError ? "Historical data unavailable" : null;
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+
+    const chart = createChart(chartContainerRef.current, {
+      width: chartContainerRef.current.clientWidth,
+      height: 300,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#0f172a",
+        fontFamily: "Hanken Grotesk, sans-serif",
+      },
+      grid: {
+        vertLines: { color: "#f2f4f6" },
+        horzLines: { color: "#f2f4f6" },
+      },
+      rightPriceScale: {
+        borderColor: "#e2e8f0",
+      },
+      timeScale: {
+        borderColor: "#e2e8f0",
+        timeVisible: true,
+      },
+    });
+
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#10b981",
+      downColor: "#ef4444",
+      borderUpColor: "#10b981",
+      borderDownColor: "#ef4444",
+      wickUpColor: "#10b981",
+      wickDownColor: "#ef4444",
+    });
+
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      color: "#26a69a",
+      priceFormat: {
+        type: "volume",
+      },
+      priceScaleId: "", // set as an overlay
+    });
+
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: {
+        top: 0.8,
+        bottom: 0,
+      },
+    });
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+
+    const handleResize = () => {
+      if (chartRef.current && chartContainerRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      chart.remove();
+    };
+  }, []);
+
+  // Fetch BTC data
+  useEffect(() => {
+    if (rawData && candleSeriesRef.current && volumeSeriesRef.current && chartRef.current) {
+      const sortedData = [...rawData].sort((a, b) => a.time - b.time);
+      
+      candleSeriesRef.current.setData(sortedData);
+      
+      const volumeData = sortedData.map(d => ({
+        time: d.time,
+        value: d.volume,
+        color: d.close >= d.open ? "rgba(16, 185, 129, 0.4)" : "rgba(239, 68, 68, 0.4)"
+      }));
+      
+      volumeSeriesRef.current.setData(volumeData);
+      chartRef.current.timeScale().fitContent();
+    } else if (!rawData && !loading && candleSeriesRef.current && volumeSeriesRef.current) {
+      candleSeriesRef.current.setData([]);
+      volumeSeriesRef.current.setData([]);
+    }
+  }, [rawData, loading]);
 
   return (
     <div className="bg-white border border-[#e2e8f0] rounded-[4px] p-6 space-y-4">
@@ -34,77 +145,36 @@ const MarketChart = () => {
         <div className="flex items-center gap-3">
           {/* Timeframes */}
           <div className="flex bg-[#f2f4f6] p-0.5 rounded-[2px] text-[10px] font-bold text-slate-500">
-            <button className="px-2.5 py-1 hover:text-slate-900">1H</button>
-            <button className="px-2.5 py-1 hover:text-slate-900">4H</button>
-            <button className="px-2.5 py-1 bg-white text-[#0f172a] shadow-sm rounded-[2px]">1D</button>
+            {timeframes.map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-2.5 py-1 rounded transition cursor-pointer ${
+                  timeframe === tf
+                    ? "bg-white text-[#0f172a] shadow-sm"
+                    : "hover:text-slate-900"
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
           </div>
-          <div className="h-6 w-[1px] bg-[#e2e8f0]"></div>
-          <button className="p-1 hover:bg-slate-100 rounded text-slate-500 cursor-pointer">
-            <span className="material-symbols-outlined text-lg">show_chart</span>
-          </button>
-          <button className="p-1 hover:bg-slate-100 rounded text-slate-500 cursor-pointer">
-            <span className="material-symbols-outlined text-lg">fullscreen</span>
-          </button>
         </div>
       </div>
 
-      {/* High-Fidelity Candlestick Chart Mock SVG */}
-      <div className="h-80 w-full relative bg-slate-50 rounded-[2px] overflow-hidden border border-[#f2f4f6] p-4 flex items-center justify-center">
-        <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
-          {/* Grid lines */}
-          <line x1="0" y1="50" x2="800" y2="50" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="0" y1="120" x2="800" y2="120" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="0" y1="190" x2="800" y2="190" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="0" y1="260" x2="800" y2="260" stroke="#eceef0" strokeDasharray="3" />
-
-          <line x1="100" y1="0" x2="100" y2="300" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="250" y1="0" x2="250" y2="300" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="400" y1="0" x2="400" y2="300" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="550" y1="0" x2="550" y2="300" stroke="#eceef0" strokeDasharray="3" />
-          <line x1="700" y1="0" x2="700" y2="300" stroke="#eceef0" strokeDasharray="3" />
-
-          {/* Candle 1 (Green) */}
-          <line x1="80" y1="140" x2="80" y2="220" stroke="#10b981" strokeWidth="2" />
-          <rect x="70" y="160" width="20" height="40" fill="#10b981" rx="1" />
-
-          {/* Candle 2 (Red) */}
-          <line x1="160" y1="120" x2="160" y2="200" stroke="#ef4444" strokeWidth="2" />
-          <rect x="150" y="130" width="20" height="50" fill="#ef4444" rx="1" />
-
-          {/* Candle 3 (Green) */}
-          <line x1="240" y1="90" x2="240" y2="170" stroke="#10b981" strokeWidth="2" />
-          <rect x="230" y="100" width="20" height="50" fill="#10b981" rx="1" />
-
-          {/* Candle 4 (Green) */}
-          <line x1="320" y1="70" x2="320" y2="140" stroke="#10b981" strokeWidth="2" />
-          <rect x="310" y="80" width="20" height="40" fill="#10b981" rx="1" />
-
-          {/* Candle 5 (Red) */}
-          <line x1="400" y1="90" x2="400" y2="220" stroke="#ef4444" strokeWidth="2" />
-          <rect x="390" y="120" width="20" height="70" fill="#ef4444" rx="1" />
-
-          {/* Candle 6 (Red) */}
-          <line x1="480" y1="130" x2="480" y2="250" stroke="#ef4444" strokeWidth="2" />
-          <rect x="470" y="160" width="20" height="60" fill="#ef4444" rx="1" />
-
-          {/* Candle 7 (Green) */}
-          <line x1="560" y1="110" x2="560" y2="180" stroke="#10b981" strokeWidth="2" />
-          <rect x="550" y="120" width="20" height="40" fill="#10b981" rx="1" />
-
-          {/* Candle 8 (Green) */}
-          <line x1="640" y1="80" x2="640" y2="150" stroke="#10b981" strokeWidth="2" />
-          <rect x="630" y="90" width="20" height="50" fill="#10b981" rx="1" />
-
-          {/* Candle 9 (Red) */}
-          <line x1="720" y1="100" x2="720" y2="170" stroke="#ef4444" strokeWidth="2" />
-          <rect x="710" y="110" width="20" height="30" fill="#ef4444" rx="1" />
-
-          {/* Moving Average Line (Cyan Curve) */}
-          <path d="M 80 180 Q 200 130 320 100 T 560 140 T 720 120" fill="none" stroke="#06b6d4" strokeWidth="3" />
-        </svg>
-        <div className="absolute bottom-2 left-4 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-          BTC/USDT 1D Candlestick Chart Feed
-        </div>
+      {/* Real Candlestick Chart */}
+      <div className="h-80 w-full relative bg-white rounded-[2px] overflow-hidden border border-[#f2f4f6] p-4">
+        {loading && (
+          <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10 text-xs font-bold text-[#0f172a] font-sans">
+            Loading chart data...
+          </div>
+        )}
+        {error && (
+          <div className="absolute inset-0 bg-white/90 flex items-center justify-center z-10 text-xs font-bold text-red-500 font-sans">
+            {error}
+          </div>
+        )}
+        <div ref={chartContainerRef} className="w-full h-full" />
       </div>
     </div>
   );

@@ -160,3 +160,27 @@ All requests must have the `/api` prefix. Authenticated routes require a valid s
 
 ### Risk Check
 * **URL:** `POST /api/ai/risk-check`
+
+---
+
+## 📈 Historical Data & Charts
+
+### Get Stock History
+* **URL:** `GET /api/stocks/:symbol/history`
+* **Query Params:** 
+  * `interval` (e.g., `1d`, `1wk`, `1mo`)
+  * `indicators` (comma-separated, e.g., `sma20,ema9`)
+* **Response:**
+  ```json
+  {
+    "success": true,
+    "data": [
+      { "time": "2026-07-20", "open": 150, "high": 155, "low": 149, "close": 154, "volume": 1200000 }
+    ],
+    "indicators": {
+      "sma20": [
+        { "time": "2026-07-20", "value": 151.2 }
+      ]
+    }
+  }
+  ```

@@ -1,102 +1,83 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { getStockHistory } from "../services/marketApi";
 import usePortfolioStore from "../store/portfolioStore";
 import useTradingStore from "../store/tradingStore";
 import useMarketStore from "../store/marketStore";
-import StockDetails from "../components/Stock/StockDetails";
+import StockInfoPanel from "../components/Stock/StockInfoPanel";
 import PortfolioSummary from "../components/Portfolio/PortfolioSummary";
 import HoldingCard from "../components/Portfolio/HoldingCard";
 
-const CandlestickChart = () => {
+import { useHistoricalData } from "../hooks/useHistoricalData";
+
+import ChartContainer from "../components/Chart/ChartContainer";
+import CandlestickChartSeries from "../components/Chart/CandlestickChart";
+import VolumeChartSeries from "../components/Chart/VolumeChart";
+import TimeframeSelector from "../components/Chart/TimeframeSelector";
+import IndicatorSelector, { AVAILABLE_INDICATORS } from "../components/Chart/IndicatorSelector";
+import IndicatorSeries from "../components/Chart/IndicatorSeries";
+
+const MainChart = () => {
   const { selectedStock } = useTradingStore();
   const prices = useMarketStore((state) => state.prices);
-  const [timeframe, setTimeframe] = useState("1D");
+  const [timeframe, setTimeframe] = useState("1M");
+  const [selectedIndicators, setSelectedIndicators] = useState(["sma20"]);
+
+  const toggleIndicator = (id) => {
+    setSelectedIndicators(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
 
   const symbol = selectedStock?.symbol || "AAPL";
   const name = selectedStock?.companyName || "Apple Inc";
   const livePrice = prices[symbol]?.price ?? 212.5;
 
-  const timeframes = ["1D", "1W", "1M", "3M", "1Y", "ALL"];
+  const timeframes = ["1D", "1W", "1M", "3M", "1Y"];
+
+  const stockParam = {
+    symbol,
+    exchange: symbol === "SBIN" || symbol === "SBIN-EQ" ? "NSE" : null,
+    token: symbol === "SBIN" || symbol === "SBIN-EQ" ? "3045" : null
+  };
+
+  const { data: responseData, isLoading: loading, error: queryError } = useHistoricalData(stockParam, timeframe, selectedIndicators);
+  const rawData = responseData?.data || [];
+  const indicatorData = responseData?.indicators || {};
+  const error = queryError ? "Historical data unavailable" : null;
+
+  const headerLeft = (
+    <>
+      <span className="font-headline-md font-bold text-sm text-[#0f172a]">{name} ({symbol})</span>
+      <div className="flex items-center gap-xs px-2 py-0.5 bg-surface-container rounded border border-outline-variant text-[10px] font-bold text-slate-500 uppercase">
+        <span className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-dot"></span> 
+        {symbol === "BTC" ? "Crypto" : symbol === "SBIN" || symbol === "SBIN-EQ" ? "NSE" : "NASDAQ"}
+      </div>
+    </>
+  );
+
+  const headerRight = (
+    <>
+      <TimeframeSelector timeframe={timeframe} setTimeframe={setTimeframe} timeframes={timeframes} />
+    </>
+  );
 
   return (
-    <div className="glass-card rounded flex flex-col h-[400px] bg-white border border-[#e2e8f0]">
-      <div className="p-md border-b border-outline-variant/30 flex items-center justify-between">
-        <div className="flex items-center gap-md">
-          <span className="font-headline-md font-bold text-sm text-[#0f172a]">{name} ({symbol})</span>
-          <div className="flex items-center gap-xs px-2 py-0.5 bg-surface-container rounded border border-outline-variant text-[10px] font-bold text-slate-500 uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-dot"></span> 
-            {symbol === "BTC" ? "Crypto" : "NASDAQ"}
-          </div>
-        </div>
-        <div className="flex gap-1">
-          {timeframes.map((tf) => (
-            <button
-              key={tf}
-              onClick={() => setTimeframe(tf)}
-              className={`px-2.5 py-1 text-[10px] font-bold rounded transition cursor-pointer ${
-                timeframe === tf
-                  ? "bg-primary text-white"
-                  : "text-slate-500 hover:bg-surface-container"
-              }`}
-            >
-              {tf}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Candlestick grid container */}
-      <div className="flex-1 p-md relative overflow-hidden bg-white">
-        <div 
-          className="absolute inset-0 opacity-40" 
-          style={{ 
-            backgroundImage: "linear-gradient(to bottom, #F2F4F6 1px, transparent 1px), linear-gradient(to right, #F2F4F6 1px, transparent 1px)", 
-            backgroundSize: "40px 40px" 
-          }}
-        ></div>
-        
-        {/* Simulate charts wicks and body */}
-        <div className="relative w-full h-full flex items-end gap-2 pb-6">
-          <div className="flex-1 h-full flex flex-col justify-end gap-2 z-10">
-            <div className="w-full flex items-end justify-between px-6 h-2/3">
-              <div className="w-3 bg-red-400 h-24 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-32 bg-red-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-              <div className="w-3 bg-green-400 h-32 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-40 bg-green-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-              <div className="w-3 bg-green-400 h-40 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-48 bg-green-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-              <div className="w-3 bg-red-400 h-20 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-30 bg-red-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-              <div className="w-3 bg-green-400 h-44 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-52 bg-green-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-              <div className="w-3 bg-green-400 h-36 relative rounded-[1px]">
-                <div className="absolute w-[1.5px] h-44 bg-green-400 left-1/2 -translate-x-1/2 -top-4"></div>
-              </div>
-            </div>
-            {/* Volume Blocks */}
-            <div className="w-full h-16 flex items-end gap-[4px] opacity-10 px-4">
-              <div className="flex-1 bg-primary h-8 rounded-[1px]"></div>
-              <div className="flex-1 bg-primary h-12 rounded-[1px]"></div>
-              <div className="flex-1 bg-primary h-10 rounded-[1px]"></div>
-              <div className="flex-1 bg-primary h-14 rounded-[1px]"></div>
-              <div className="flex-1 bg-primary h-6 rounded-[1px]"></div>
-              <div className="flex-1 bg-primary h-9 rounded-[1px]"></div>
-            </div>
-          </div>
-
-          {/* Current Live Price tag indicator */}
-          <div 
-            className="absolute right-0 border border-[#cbd5e1] bg-slate-900 text-white font-data-mono text-[10px] px-2 py-0.5 rounded shadow z-20"
-            style={{ bottom: `${(livePrice % 100) * 1.5}px` }}
-          >
-            LTP: ₹{livePrice.toFixed(2)}
-          </div>
-        </div>
-      </div>
+    <div>
+      <IndicatorSelector selectedIndicators={selectedIndicators} onToggle={toggleIndicator} />
+      <ChartContainer headerLeft={headerLeft} headerRight={headerRight} loading={loading} error={error}>
+        <CandlestickChartSeries data={rawData} />
+        {selectedIndicators.map(indId => {
+          const config = AVAILABLE_INDICATORS.find(i => i.id === indId);
+          return config ? (
+            <IndicatorSeries 
+              key={indId} 
+              data={indicatorData[indId]} 
+              color={config.color} 
+            />
+          ) : null;
+        })}
+        <VolumeChartSeries data={rawData} />
+      </ChartContainer>
     </div>
   );
 };
@@ -374,14 +355,14 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
         {/* Main Left Workspace: Chart + Holdings + History (8 Columns) */}
         <div className="lg:col-span-8 space-y-6">
-          <CandlestickChart />
+          <MainChart />
           <HoldingsTable />
           <TransactionHistoryTable />
         </div>
 
         {/* Right Sidebar Widgets: Stock Details + AI Analysis + Order Book (4 Columns) */}
         <div className="lg:col-span-4 space-y-6">
-          <StockDetails />
+          <StockInfoPanel />
           <AIRecommendationWidget />
           <OrderBookWidget />
         </div>

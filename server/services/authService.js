@@ -51,7 +51,7 @@ export const loginUser = async({email,password})=>{
     );
 
     if(!isMatch){
-        throw new Error("Invalid Credentials");
+        throw new Error("Invalid credentials");
     }
 
     const payload={
