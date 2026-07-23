@@ -6,6 +6,7 @@ import useMarketStore from "../store/marketStore";
 import StockInfoPanel from "../components/Stock/StockInfoPanel";
 import PortfolioSummary from "../components/Portfolio/PortfolioSummary";
 import HoldingCard from "../components/Portfolio/HoldingCard";
+import MarketPulse from "../components/AI/MarketPulse";
 
 import { useHistoricalData } from "../hooks/useHistoricalData";
 
@@ -351,6 +352,9 @@ const Dashboard = () => {
     <div className="space-y-6">
       {/* Portfolio Stats Cards */}
       <PortfolioSummary />
+
+      {/* 🧠 AI Market Pulse Widget */}
+      <MarketPulse />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
         {/* Main Left Workspace: Chart + Holdings + History (8 Columns) */}
