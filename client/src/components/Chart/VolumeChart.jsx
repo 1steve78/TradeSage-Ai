@@ -1,26 +1,24 @@
 import { useEffect, useRef } from 'react';
-import { HistogramSeries } from 'lightweight-charts';
 import { useChart } from './ChartContainer';
 
-const VolumeChart = ({ data }) => {
+const VolumeChart = ({ data = [] }) => {
   const chart = useChart();
   const seriesRef = useRef(null);
 
   useEffect(() => {
     if (!chart) return;
 
-    seriesRef.current = chart.addSeries(HistogramSeries, {
+    seriesRef.current = chart.addHistogramSeries({
       color: "#26a69a",
       priceFormat: {
         type: "volume",
       },
       priceScaleId: "", // set as an overlay by setting a blank priceScaleId
-    });
-
-    seriesRef.current.priceScale().applyOptions({
-      scaleMargins: {
-        top: 0.8, // highest point of the series will be at 80% of the pane height
-        bottom: 0,
+      priceScale: {
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0,
+        },
       },
     });
 

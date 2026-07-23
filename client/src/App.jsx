@@ -11,6 +11,8 @@ import Orders from './pages/Orders';
 import Watchlist from './pages/Watchlist';
 import NotFound from './pages/NotFound';
 
+import AnalyticsPage from './pages/AnalyticsPage';
+
 function App() {
   const { checkAuth } = useAuthStore();
 
@@ -36,6 +38,7 @@ function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/watchlist" element={<Watchlist />} />
       </Route>

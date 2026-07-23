@@ -72,6 +72,16 @@ function AppLayout() {
               Portfolio
             </NavLink>
             <NavLink
+              to="/analytics"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              Analytics
+            </NavLink>
+            <NavLink
               to="/orders"
               className={({ isActive }) =>
                 `px-3 py-1.5 transition-colors ${
@@ -158,7 +168,7 @@ function AppLayout() {
         </aside>
 
         {/* Content Outlet Canvas */}
-        <main className="flex-1 overflow-y-auto p-gutter bg-[#F8FAFC]">
+        <main className="flex-1 min-w-0 w-full overflow-y-auto p-gutter bg-[#F8FAFC]">
           <Outlet />
         </main>
       </div>

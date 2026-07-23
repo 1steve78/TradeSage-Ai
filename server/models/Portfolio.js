@@ -15,6 +15,18 @@ const holdingSchema = new mongoose.Schema(
       trim: true,
     },
 
+    sector: {
+      type: String,
+      trim: true,
+      default: "Unknown"
+    },
+
+    industry: {
+      type: String,
+      trim: true,
+      default: "Unknown"
+    },
+
     quantity: {
       type: Number,
       required: true,

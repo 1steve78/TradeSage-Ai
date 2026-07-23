@@ -7,6 +7,7 @@ import marketRoutes from "./routes/marketRoutes.js";
 import watchlistRoutes from "./routes/watchlistRoutes.js";
 import tradingRoutes from "./routes/tradingRoutes.js";
 import portfolioRoutes from "./routes/portfolioRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
 
 const app = express();
 
@@ -36,5 +37,6 @@ app.use("/api/market", marketRoutes);
 app.use("/api/watchlists", watchlistRoutes);
 app.use("/api/trading",tradingRoutes);
 app.use("/api/portfolio",portfolioRoutes);
+app.use("/api", analyticsRoutes);
 
 export default app;

@@ -71,7 +71,7 @@ const MainChart = () => {
           return config ? (
             <IndicatorSeries 
               key={indId} 
-              data={indicatorData[indId]} 
+              data={indicatorData[indId] || []} 
               color={config.color} 
             />
           ) : null;

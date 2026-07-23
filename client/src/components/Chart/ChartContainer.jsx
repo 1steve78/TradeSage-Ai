@@ -7,7 +7,8 @@ export const useChart = () => useContext(ChartContext);
 
 const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) => {
   const chartContainerRef = useRef(null);
-  const [chart, setChart] = useState(null);
+  const chartRef = useRef(null);
+  const [, forceRender] = useState(0);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -35,7 +36,8 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
         mode: 1, // CrosshairMode.Normal
       }
     });
-    setChart(newChart);
+    chartRef.current = newChart;
+    forceRender(x => x + 1);
 
     const handleResize = () => {
       if (chartContainerRef.current) {
@@ -50,12 +52,12 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
     return () => {
       window.removeEventListener("resize", handleResize);
       newChart.remove();
-      setChart(null);
+      chartRef.current = null;
     };
   }, []);
 
   return (
-    <ChartContext.Provider value={chart}>
+    <ChartContext.Provider value={chartRef.current}>
       <div className="glass-card rounded flex flex-col h-[400px] bg-white border border-[#e2e8f0]">
         <div className="p-md border-b border-outline-variant/30 flex items-center justify-between">
           <div className="flex items-center gap-md">

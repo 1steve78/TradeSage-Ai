@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { CandlestickSeries } from 'lightweight-charts';
 import { useChart } from './ChartContainer';
 import useMarketStore from '../../store/marketStore';
 import useTradingStore from '../../store/tradingStore';
 
-const CandlestickChart = ({ data }) => {
+const CandlestickChart = ({ data = [] }) => {
   const chart = useChart();
   const seriesRef = useRef(null);
   const priceLineRef = useRef(null);
@@ -18,7 +17,7 @@ const CandlestickChart = ({ data }) => {
   useEffect(() => {
     if (!chart) return;
     
-    seriesRef.current = chart.addSeries(CandlestickSeries, {
+    seriesRef.current = chart.addCandlestickSeries({
       upColor: "#10b981",
       downColor: "#ef4444",
       borderUpColor: "#10b981",
