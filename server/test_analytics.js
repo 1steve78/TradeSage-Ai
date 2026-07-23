@@ -1,9 +1,13 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import mongoose from "mongoose";
+import connectMongo from "./config/database.js";
 import { calculatePortfolioSummary, calculateAllocation, calculateSectorDistribution, calculatePerformance } from "./services/analytics/analyticsService.js";
 
 async function test() {
     try {
-        await mongoose.connect("mongodb+srv://steveyasin243_db_user:uQnRX7B3BgCrwhuo@tradesage-ai.jmuve3j.mongodb.net/?appName=TradeSage-Ai");
+        await connectMongo();
 
         console.log("Connected to MongoDB");
 
