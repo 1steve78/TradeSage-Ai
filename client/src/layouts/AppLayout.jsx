@@ -4,11 +4,14 @@ import useAuthStore from "../store/authStore";
 import useMarketStore from "../store/marketStore";
 import PriorityWatchlist from "../components/Dashboard/PriorityWatchlist";
 import TradeModal from "../components/Trading/TradeModal";
+import AIChat from "../components/AI/AIChat/AIChat";
+import { Bot, Sparkles } from "lucide-react";
 
 function AppLayout() {
   const { user } = useAuthStore();
   const prices = useMarketStore((state) => state.prices);
   const [darkMode, setDarkMode] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   // Live prices for marquee ticker tape
   const getLivePrice = (symbol, defaultVal) => {
@@ -41,7 +44,7 @@ function AppLayout() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[#F8FAFC] text-[#191c1e] antialiased select-none font-sans">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#F8FAFC] text-[#191c1e] antialiased select-none font-sans relative">
       {/* TopNavBar */}
       <header className="flex justify-between items-center px-lg py-xs w-full bg-white border-b border-outline-variant z-40">
         <div className="flex items-center gap-xl">
@@ -60,6 +63,16 @@ function AppLayout() {
               }
             >
               Terminal
+            </NavLink>
+            <NavLink
+              to="/ai-insights"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              AI Insights
             </NavLink>
             <NavLink
               to="/portfolio"
@@ -96,6 +109,16 @@ function AppLayout() {
 
         {/* Header Right Widgets */}
         <div className="flex items-center gap-md">
+          {/* AI Assistant Quick Trigger Button */}
+          <button
+            onClick={() => setAiChatOpen(!aiChatOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs transition-colors cursor-pointer"
+            title="Open AI Portfolio Assistant"
+          >
+            <Sparkles size={14} className="text-primary animate-pulse" />
+            <span className="hidden sm:inline">AI Assistant</span>
+          </button>
+
           {/* Live indicator badge */}
           <div className="flex items-center gap-xs px-sm py-1 bg-surface-container-low rounded border border-outline-variant">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 pulse-dot"></div>
@@ -193,6 +216,23 @@ function AppLayout() {
           <p className="text-slate-400 font-medium">© 2026 TradeSage Institutional. All Rights Reserved.</p>
         </div>
       </footer>
+
+      {/* Floating AI Assistant Drawer / Modal */}
+      {aiChatOpen && (
+        <div className="fixed bottom-20 right-6 w-[440px] max-w-[92vw] h-[600px] max-h-[82vh] z-50 shadow-2xl transition-all animate-in fade-in slide-in-from-bottom-5 duration-200">
+          <AIChat onClose={() => setAiChatOpen(false)} />
+        </div>
+      )}
+
+      {/* Floating Toggle Button */}
+      <button
+        onClick={() => setAiChatOpen(!aiChatOpen)}
+        className="fixed bottom-6 right-6 z-50 p-3.5 bg-primary hover:bg-primary/90 text-white rounded-full shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer font-bold text-xs"
+        title="Toggle AI Portfolio Assistant"
+      >
+        <Bot size={22} />
+        <span className="hidden sm:inline">AI Assistant</span>
+      </button>
 
       {/* Global Trade Modal */}
       <TradeModal />

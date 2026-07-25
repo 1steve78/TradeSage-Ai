@@ -12,6 +12,7 @@ import Watchlist from './pages/Watchlist';
 import NotFound from './pages/NotFound';
 
 import AnalyticsPage from './pages/AnalyticsPage';
+import AIInsightsPage from './pages/AIInsightsPage';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -37,6 +38,7 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/ai-insights" element={<AIInsightsPage />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/orders" element={<Orders />} />

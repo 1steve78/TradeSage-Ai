@@ -7,12 +7,12 @@ export const useChart = () => useContext(ChartContext);
 
 const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) => {
   const chartContainerRef = useRef(null);
-  const chartRef = useRef(null);
-  const [, forceRender] = useState(0);
+  // Use state (not ref) so React re-renders children with the real chart instance
+  const [chart, setChart] = useState(null);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
-    
+
     const newChart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth || 600,
       height: chartContainerRef.current.clientHeight || 320,
@@ -34,10 +34,11 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
       },
       crosshair: {
         mode: 1, // CrosshairMode.Normal
-      }
+      },
     });
-    chartRef.current = newChart;
-    forceRender(x => x + 1);
+
+    // Set into state so context consumers re-render and receive the real chart
+    setChart(newChart);
 
     const handleResize = () => {
       if (chartContainerRef.current) {
@@ -52,12 +53,12 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
     return () => {
       window.removeEventListener("resize", handleResize);
       newChart.remove();
-      chartRef.current = null;
+      setChart(null);
     };
   }, []);
 
   return (
-    <ChartContext.Provider value={chartRef.current}>
+    <ChartContext.Provider value={chart}>
       <div className="glass-card rounded flex flex-col h-[400px] bg-white border border-[#e2e8f0]">
         <div className="p-md border-b border-outline-variant/30 flex items-center justify-between">
           <div className="flex items-center gap-md">

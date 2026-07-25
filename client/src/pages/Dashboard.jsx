@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getStockHistory } from "../services/marketApi";
 import usePortfolioStore from "../store/portfolioStore";
 import useTradingStore from "../store/tradingStore";
@@ -6,7 +6,6 @@ import useMarketStore from "../store/marketStore";
 import StockInfoPanel from "../components/Stock/StockInfoPanel";
 import PortfolioSummary from "../components/Portfolio/PortfolioSummary";
 import HoldingCard from "../components/Portfolio/HoldingCard";
-import MarketPulse from "../components/AI/MarketPulse";
 
 import { useHistoricalData } from "../hooks/useHistoricalData";
 
@@ -194,99 +193,6 @@ const TransactionHistoryTable = () => {
   );
 };
 
-const AIRecommendationWidget = () => {
-  const { selectedStock } = useTradingStore();
-  
-  const symbol = selectedStock?.symbol || "AAPL";
-  const name = selectedStock?.companyName || "Apple Inc";
-
-  const getRationale = (sym) => {
-    if (sym === "AAPL") {
-      return [
-        "Strong quarterly earnings with 15% YoY growth in services sector.",
-        "Positive RSI momentum and breakout from 50-day EMA support levels.",
-        "Major support level identified at ₹210 with high liquid absorption."
-      ];
-    }
-    if (sym === "TSLA") {
-      return [
-        "Elevated risk due to inventory build-up and compressed profit margins.",
-        "Bearish MACD crossover on daily chart, indicating down momentum.",
-        "Key support lies at ₹172. Recommend wait-and-watch stance."
-      ];
-    }
-    return [
-      "Moderate relative strength index (RSI) indicating stable consolidation.",
-      "Steady accumulation by institutional funds over the last 30 days.",
-      "Clear channel pattern resistance at 1.05x of current market value."
-    ];
-  };
-
-  const getRiskScore = (sym) => {
-    if (sym === "AAPL") return 78;
-    if (sym === "TSLA") return 42;
-    if (sym === "NVDA") return 88;
-    return 65;
-  };
-
-  const getRating = (score) => {
-    if (score >= 75) return "BUY";
-    if (score <= 45) return "SELL";
-    return "HOLD";
-  };
-
-  const score = getRiskScore(symbol);
-  const rating = getRating(score);
-
-  return (
-    <div className="bg-[#131b2e] p-md rounded text-white relative overflow-hidden font-sans border border-black shadow">
-      <div className="absolute -right-4 -top-4 opacity-5 pointer-events-none">
-        <span className="material-symbols-outlined text-[100px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
-      </div>
-      
-      <div className="relative z-10 space-y-4">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[#dae2fd]">auto_awesome</span>
-          <span className="font-label-caps text-[10px] tracking-[0.2em] text-[#bec6e0] uppercase font-bold">
-            TradeSage AI Analysis
-          </span>
-        </div>
-
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-[10px] text-[#bec6e0] mb-1 font-semibold">Risk Score</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-white">{score}</span>
-              <span className="text-[#bec6e0] text-xs">/100</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-[#bec6e0] mb-1 font-semibold">Recommendation</p>
-            <span className={`px-4 py-1.5 rounded font-black text-sm text-black ${
-              rating === "BUY" ? "bg-green-400" : rating === "SELL" ? "bg-red-400" : "bg-amber-400"
-            }`}>
-              {rating}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-2 pt-2 border-t border-slate-700/50">
-          {getRationale(symbol).map((item, idx) => (
-            <div key={idx} className="flex items-start gap-2 text-xs">
-              <span className={`material-symbols-outlined text-sm mt-0.5 ${
-                rating === "BUY" ? "text-green-400" : rating === "SELL" ? "text-red-400" : "text-amber-400"
-              }`}>
-                {rating === "SELL" ? "cancel" : "check_circle"}
-              </span>
-              <p className="text-[#bec6e0] leading-snug">{item}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const OrderBookWidget = () => {
   const { selectedStock } = useTradingStore();
   const prices = useMarketStore((state) => state.prices);
@@ -294,7 +200,6 @@ const OrderBookWidget = () => {
   const symbol = selectedStock?.symbol || "AAPL";
   const livePrice = prices[symbol]?.price ?? 212.5;
 
-  // Generate ask/bid price spreads dynamically
   const asks = [
     { price: livePrice + 0.03, qty: 1250 },
     { price: livePrice + 0.02, qty: 840 },
@@ -314,7 +219,6 @@ const OrderBookWidget = () => {
         <span className="text-[#0f172a]">Spread: 0.02</span>
       </div>
       <div className="grid grid-cols-2 text-[10px] font-data-mono font-medium">
-        {/* Asks (Sell Orders) */}
         <div className="p-sm space-y-1 bg-red-50/20 border-r border-[#f2f4f6]">
           {asks.map((ask, idx) => (
             <div key={idx} className="flex justify-between text-red-700">
@@ -323,7 +227,6 @@ const OrderBookWidget = () => {
             </div>
           ))}
         </div>
-        {/* Bids (Buy Orders) */}
         <div className="p-sm space-y-1 bg-green-50/20">
           {bids.map((bid, idx) => (
             <div key={idx} className="flex justify-between text-green-700">
@@ -353,9 +256,6 @@ const Dashboard = () => {
       {/* Portfolio Stats Cards */}
       <PortfolioSummary />
 
-      {/* 🧠 AI Market Pulse Widget */}
-      <MarketPulse />
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
         {/* Main Left Workspace: Chart + Holdings + History (8 Columns) */}
         <div className="lg:col-span-8 space-y-6">
@@ -364,10 +264,9 @@ const Dashboard = () => {
           <TransactionHistoryTable />
         </div>
 
-        {/* Right Sidebar Widgets: Stock Details + AI Analysis + Order Book (4 Columns) */}
+        {/* Right Sidebar Widgets: Stock Details + Order Book (4 Columns) */}
         <div className="lg:col-span-4 space-y-6">
           <StockInfoPanel />
-          <AIRecommendationWidget />
           <OrderBookWidget />
         </div>
       </div>
