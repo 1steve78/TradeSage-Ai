@@ -243,18 +243,8 @@ export const getCompanyInfo = async (req, res) => {
   try {
     const { symbol } = req.params;
     
-    // Some Indian stocks might end in -EQ. Finnhub might need .NS or .BO
-    // Try passing symbol as is. If no data, maybe strip -EQ and append .NS.
-    let finnhubSymbol = symbol.toUpperCase();
-    if (finnhubSymbol.endsWith("-EQ")) {
-      finnhubSymbol = finnhubSymbol.replace("-EQ", ".NS");
-    } else if (finnhubSymbol.length >= 3 && !finnhubSymbol.includes(".")) {
-      // Very naive heuristic for Indian stocks without exchange suffixes
-      if (req.query.exchange === "NSE") finnhubSymbol += ".NS";
-      else if (req.query.exchange === "BSE") finnhubSymbol += ".BO";
-    }
-
-    const profile = await getCompanyProfile(finnhubSymbol);
+    // Pass the symbol directly to our new SmartAPI-backed getCompanyProfile
+    const profile = await getCompanyProfile(symbol);
 
     res.status(200).json({
       success: true,
@@ -267,8 +257,7 @@ export const getCompanyInfo = async (req, res) => {
         marketCap: profile.marketCapitalization ? profile.marketCapitalization * 1000000 : null,
         currency: profile.currency || "INR",
         logo: profile.logo || null,
-        // Fallbacks for missing finnhub data
-        weburl: profile.weburl || null,
+        weburl: null,
       }
     });
 

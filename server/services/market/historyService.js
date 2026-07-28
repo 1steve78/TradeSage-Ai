@@ -1,7 +1,5 @@
-import axios from "axios";
-
-const FINNHUB_URL =
-  "https://finnhub.io/api/v1/stock/candle";
+// historyService.js
+// Mock historical data generator for demo/fallback purposes (e.g. BTC/Crypto)
 
 const intervalMap = {
   "1D": { resolution: "5", days: 1 },

@@ -32,10 +32,10 @@ const usePortfolioStore = create((set, get) => ({
     }
   },
 
-  buyStock: async (symbol, companyName, quantity) => {
+  buyStock: async (symbol, companyName, quantity, price) => {
     try {
       set({ loading: true, error: null });
-      const updatedPortfolio = await buyStockApi(symbol, companyName, quantity);
+      const updatedPortfolio = await buyStockApi(symbol, companyName, quantity, price);
       set({ portfolio: updatedPortfolio, loading: false });
       // Refetch transactions after trading
       await get().fetchTransactions();
@@ -46,10 +46,10 @@ const usePortfolioStore = create((set, get) => ({
     }
   },
 
-  sellStock: async (symbol, companyName, quantity) => {
+  sellStock: async (symbol, companyName, quantity, price) => {
     try {
       set({ loading: true, error: null });
-      const updatedPortfolio = await sellStockApi(symbol, companyName, quantity);
+      const updatedPortfolio = await sellStockApi(symbol, companyName, quantity, price);
       set({ portfolio: updatedPortfolio, loading: false });
       // Refetch transactions after trading
       await get().fetchTransactions();

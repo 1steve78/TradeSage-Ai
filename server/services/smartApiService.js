@@ -97,6 +97,14 @@ export const isSessionValid = async () => {
 };
 
 /**
+ * Exposes the raw session data (including feedToken) for WebSocket authentication.
+ */
+export const getRawSession = async () => {
+    await ensureSession();
+    return sessionData;
+};
+
+/**
  * Fetches historical candle data for a given token.
  * @param {Object} params
  * @param {string} params.exchange (NSE, BSE, NFO, MCX)
@@ -186,7 +194,7 @@ export const getOptionChain = async (params) => {
 export const getInstruments = async () => {
     console.log("Downloading scrip master database from Angel One...");
     const response = await axios.get(
-        "https://margincalculator.angelbroking.com/OpenAPI_ScripMaster/files/OpenAPIScripMaster.json",
+        "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
         { timeout: 15000 }
     );
     return response.data;

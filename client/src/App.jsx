@@ -13,6 +13,8 @@ import NotFound from './pages/NotFound';
 
 import AnalyticsPage from './pages/AnalyticsPage';
 import AIInsightsPage from './pages/AIInsightsPage';
+import StockDetailsPage from './pages/StockDetailsPage';
+import MarketExplorer from './components/Stock/MarketExplorer';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -38,6 +40,8 @@ function App() {
         }
       >
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/explorer" element={<MarketExplorer />} />
+        <Route path="/stock/:symbol" element={<StockDetailsPage />} />
         <Route path="/ai-insights" element={<AIInsightsPage />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/analytics" element={<AnalyticsPage />} />

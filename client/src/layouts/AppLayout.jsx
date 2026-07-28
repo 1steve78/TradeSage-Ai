@@ -5,13 +5,32 @@ import useMarketStore from "../store/marketStore";
 import PriorityWatchlist from "../components/Dashboard/PriorityWatchlist";
 import TradeModal from "../components/Trading/TradeModal";
 import AIChat from "../components/AI/AIChat/AIChat";
-import { Bot, Sparkles } from "lucide-react";
+import GlobalSearchModal from "../components/SearchBar/GlobalSearchModal";
+import { Bot, Sparkles, Search } from "lucide-react";
 
 function AppLayout() {
   const { user } = useAuthStore();
   const prices = useMarketStore((state) => state.prices);
   const [darkMode, setDarkMode] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+
+  // Global Keyboard Listener for Ctrl+K or /
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchModalOpen((prev) => !prev);
+      } else if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        e.preventDefault();
+        setSearchModalOpen(true);
+      } else if (e.key === "Escape") {
+        setSearchModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // Live prices for marquee ticker tape
   const getLivePrice = (symbol, defaultVal) => {
@@ -47,13 +66,13 @@ function AppLayout() {
     <div className="h-screen flex flex-col overflow-hidden bg-[#F8FAFC] text-[#191c1e] antialiased select-none font-sans relative">
       {/* TopNavBar */}
       <header className="flex justify-between items-center px-lg py-xs w-full bg-white border-b border-outline-variant z-40">
-        <div className="flex items-center gap-xl">
-          <NavLink to="/dashboard" className="font-display-lg text-lg font-bold text-primary tracking-tighter">
+        <div className="flex items-center gap-md lg:gap-xl">
+          <NavLink to="/dashboard" className="font-display-lg text-lg font-bold text-primary tracking-tighter flex-shrink-0">
             TradeSage AI
           </NavLink>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex gap-md items-center font-body-md text-xs font-semibold">
+          <div className="hidden md:flex gap-xs items-center font-body-md text-xs font-semibold">
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
@@ -63,6 +82,16 @@ function AppLayout() {
               }
             >
               Terminal
+            </NavLink>
+            <NavLink
+              to="/explorer"
+              className={({ isActive }) =>
+                `px-3 py-1.5 transition-colors ${
+                  isActive ? "text-primary border-b-2 border-primary font-bold" : "text-slate-500 hover:text-primary"
+                }`
+              }
+            >
+              Markets
             </NavLink>
             <NavLink
               to="/ai-insights"
@@ -105,10 +134,33 @@ function AppLayout() {
               Orders
             </NavLink>
           </div>
+
+          {/* Persistent Top Header Search Bar */}
+          <div 
+            onClick={() => setSearchModalOpen(true)}
+            className="hidden sm:flex items-center gap-2 border border-outline-variant bg-surface-container-low hover:bg-white hover:border-primary px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-150 w-48 lg:w-64"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-400 flex-1 truncate">
+              Search TCS, AAPL, NIFTY...
+            </span>
+            <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold bg-white text-slate-500 rounded border border-slate-300 shadow-2xs">
+              Ctrl+K
+            </kbd>
+          </div>
         </div>
 
         {/* Header Right Widgets */}
         <div className="flex items-center gap-md">
+          {/* Mobile Search Button */}
+          <button
+            onClick={() => setSearchModalOpen(true)}
+            className="p-1.5 sm:hidden hover:bg-surface-container-low rounded text-slate-500 hover:text-primary transition"
+            title="Search Markets"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+
           {/* AI Assistant Quick Trigger Button */}
           <button
             onClick={() => setAiChatOpen(!aiChatOpen)}
@@ -216,6 +268,12 @@ function AppLayout() {
           <p className="text-slate-400 font-medium">© 2026 TradeSage Institutional. All Rights Reserved.</p>
         </div>
       </footer>
+
+      {/* Global Search Command Palette Modal */}
+      <GlobalSearchModal 
+        isOpen={searchModalOpen} 
+        onClose={() => setSearchModalOpen(false)} 
+      />
 
       {/* Floating AI Assistant Drawer / Modal */}
       {aiChatOpen && (

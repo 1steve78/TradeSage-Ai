@@ -8,6 +8,7 @@ import {
   calculateSectorDistribution,
 } from "../analytics/analyticsService.js";
 import { getCurrentPrice } from "../marketPriceCache.js";
+import { getMarketKnowledge, getPortfolioKnowledge } from "../knowledge/knowledgeService.js";
 
 /**
  * Hash object deterministically using SHA256 / MD5
@@ -79,7 +80,14 @@ export const buildMarketContext = async (userId) => {
       });
     }
 
-    // 4. Market Movers & Major Indices
+    // 4. Market Movers & Major Indices (via Knowledge Layer)
+    let marketKnowledge = { topHeadlines: [], articles: [], marketHeat: { score: 50, sentiment: "Neutral" } };
+    try {
+      marketKnowledge = await getMarketKnowledge("general");
+    } catch (e) {
+      console.warn("Knowledge Layer fallback in contextService:", e.message);
+    }
+
     const marketSymbols = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK"];
     const marketMovers = marketSymbols.map((sym) => {
       const live = getCurrentPrice(sym);
@@ -90,24 +98,11 @@ export const buildMarketContext = async (userId) => {
       };
     });
 
-    // 5. Relevant Market News / Headlines
-    const news = [
-      {
-        title: "RBI keeps repo rates unchanged; projects steady GDP growth",
-        source: "Financial Express",
-        sentiment: "Bullish",
-      },
-      {
-        title: "IT sector sees positive momentum driven by strong Q1 order books",
-        source: "Economic Times",
-        sentiment: "Bullish",
-      },
-      {
-        title: "Global inflation concerns trigger minor volatility in energy stocks",
-        source: "Mint",
-        sentiment: "Neutral",
-      },
-    ];
+    const news = marketKnowledge.articles.slice(0, 5).map((a) => ({
+      title: a.title,
+      source: a.source,
+      sentiment: a.sentiment,
+    }));
 
     const context = {
       timestamp: new Date().toISOString().split("T")[0],

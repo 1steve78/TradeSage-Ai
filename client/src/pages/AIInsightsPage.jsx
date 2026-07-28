@@ -24,6 +24,7 @@ import useTradingStore from "../store/tradingStore";
 import PortfolioHealthWidget from "../components/AI/PortfolioHealthWidget";
 import RiskAlertsWidget from "../components/AI/RiskAlertsWidget";
 import InsightHistory from "../components/AI/InsightHistory";
+import NewsDashboard from "../components/News/NewsDashboard";
 
 const AIInsightsPage = () => {
   const { data: pulseResponse, isLoading: pulseLoading, refetch: refetchPulse, isFetching: pulseFetching } = useMarketPulse();
@@ -442,6 +443,11 @@ const AIInsightsPage = () => {
         {/* 7. Insight History Drawer */}
         <div className="md:col-span-12">
           <InsightHistory />
+        </div>
+
+        {/* 8. Institutional News Dashboard */}
+        <div className="md:col-span-12 pt-6">
+          <NewsDashboard />
         </div>
 
       </div>

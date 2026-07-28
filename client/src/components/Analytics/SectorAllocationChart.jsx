@@ -9,10 +9,10 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-slate-900 border border-slate-700 p-4 rounded-xl shadow-2xl">
-        <p className="text-slate-200 font-semibold mb-1">{data.sector}</p>
-        <p className="text-indigo-400 font-medium">Value: ₹{data.value.toLocaleString()}</p>
-        <p className="text-teal-400 font-medium">Allocation: {data.percentage}%</p>
+      <div className="bg-surface-container-lowest border border-outline-variant p-4 rounded shadow-none">
+        <p className="font-title-sm text-[#0f172a] font-bold mb-1">{data.sector}</p>
+        <p className="font-data-mono text-[#0f172a] font-medium">Value: ₹{data.value.toLocaleString()}</p>
+        <p className="font-data-mono text-[#0f172a] font-medium">Allocation: {data.percentage}%</p>
       </div>
     );
   }
@@ -24,15 +24,15 @@ const SectorAllocationChart = ({ data = [] }) => {
 
   if (distribution.length === 0) {
     return (
-      <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-2xl border border-slate-700 h-96 flex items-center justify-center">
-        <p className="text-slate-400 font-medium">No sector data available</p>
+      <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded shadow-none h-96 flex items-center justify-center">
+        <p className="font-body-sm text-slate-500 font-medium">No sector data available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-800/40 backdrop-blur-md p-6 rounded-3xl border border-slate-700/50 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 group h-full">
-      <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-indigo-400 to-teal-400 bg-clip-text text-transparent inline-block group-hover:scale-105 transition-transform origin-left">
+    <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded shadow-none h-full flex flex-col">
+      <h3 className="font-title-sm text-[#0f172a] font-bold mb-4">
         Sector Allocation
       </h3>
       <div className="h-72 w-full">
@@ -56,7 +56,7 @@ const SectorAllocationChart = ({ data = [] }) => {
                   key={`cell-${index}`} 
                   fill={COLORS[index % COLORS.length]} 
                   className="hover:opacity-80 transition-opacity duration-300 cursor-pointer outline-none"
-                  style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.3))' }}
+                  style={{ filter: 'none' }}
                 />
               ))}
             </Pie>
@@ -66,8 +66,8 @@ const SectorAllocationChart = ({ data = [] }) => {
               height={40}
               iconType="circle"
               formatter={(value, entry, index) => (
-                <span className="text-slate-300 ml-1 font-medium">
-                  {distribution[index].sector} <span className="text-slate-500 ml-1">({distribution[index].percentage}%)</span>
+                <span className="font-body-sm text-[#0f172a] ml-1 font-medium">
+                  {distribution[index].sector} <span className="font-data-mono text-slate-500 ml-1">({distribution[index].percentage}%)</span>
                 </span>
               )}
             />

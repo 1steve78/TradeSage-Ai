@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import useWatchlistStore from "../../store/watchlistStore";
 import useMarketStore from "../../store/marketStore";
 import useTradingStore from "../../store/tradingStore";
@@ -6,6 +7,7 @@ import useSocket from "../../hooks/useSocket";
 import SearchBar from "../SearchBar/SearchBar";
 
 const PriorityWatchlist = () => {
+  const navigate = useNavigate();
   const {
     watchlists,
     selectedWatchlist,
@@ -39,6 +41,11 @@ const PriorityWatchlist = () => {
     if (name && name.trim()) {
       await createWatchlist(name.trim());
     }
+  };
+
+  const handleStockClick = (stock) => {
+    selectStock({ symbol: stock.symbol, companyName: stock.companyName });
+    navigate(`/stock/${stock.symbol}`);
   };
 
   return (
@@ -116,7 +123,7 @@ const PriorityWatchlist = () => {
                       return (
                         <div
                           key={stock.symbol}
-                          onClick={() => selectStock({ symbol: stock.symbol, companyName: stock.companyName })}
+                          onClick={() => handleStockClick(stock)}
                           className="flex items-center justify-between px-md py-1.5 hover:bg-surface-dim rounded cursor-pointer text-xs group/row"
                         >
                           <span className="font-semibold text-slate-700">{stock.symbol}</span>

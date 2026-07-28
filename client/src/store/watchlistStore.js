@@ -168,6 +168,90 @@ const useWatchlistStore = create((set, get) => ({
     }
   },
 
+  // Single-source-of-truth helper: check if stock is in any/selected watchlist
+  isStockInWatchlist: (symbol) => {
+    if (!symbol) return false;
+    const { watchlists } = get();
+    const cleanSym = symbol.toUpperCase();
+    return watchlists.some((w) =>
+      w.stocks?.some((s) => s.symbol.toUpperCase() === cleanSym)
+    );
+  },
+
+  // Optimistic UI toggle for instant header/search feedback
+  toggleStockInWatchlist: async (stock) => {
+    const { watchlists, selectedWatchlist, addStock, removeStock, isStockInWatchlist } = get();
+    const symbol = typeof stock === "string" ? stock : stock.symbol;
+    const companyName = typeof stock === "string" ? stock : (stock.companyName || stock.name || symbol);
+
+    // Target watchlist (selected or first available)
+    let targetW = selectedWatchlist || watchlists[0];
+
+    // If no watchlist exists yet, create default
+    if (!targetW) {
+      try {
+        targetW = await createWatchlistApi("My Watchlist");
+        set((state) => ({
+          watchlists: [...state.watchlists, targetW],
+          selectedWatchlist: targetW,
+        }));
+      } catch (err) {
+        console.error("Failed to create default watchlist", err);
+        return;
+      }
+    }
+
+    const isIn = isStockInWatchlist(symbol);
+    const prevWatchlists = [...get().watchlists];
+    const prevSelected = get().selectedWatchlist;
+
+    // 1. OPTIMISTIC UPDATE
+    if (isIn) {
+      // Optimistically remove
+      set((state) => {
+        const nextWatchlists = state.watchlists.map((w) => ({
+          ...w,
+          stocks: w.stocks.filter((s) => s.symbol.toUpperCase() !== symbol.toUpperCase()),
+        }));
+        return {
+          watchlists: nextWatchlists,
+          selectedWatchlist: nextWatchlists.find((w) => w._id === state.selectedWatchlist?._id) || nextWatchlists[0] || null,
+        };
+      });
+
+      // 2. BACKEND API CALL
+      try {
+        await removeStockApi(targetW._id, symbol);
+      } catch (err) {
+        // Rollback on failure
+        set({ watchlists: prevWatchlists, selectedWatchlist: prevSelected, error: err.message });
+      }
+    } else {
+      // Optimistically add
+      set((state) => {
+        const nextWatchlists = state.watchlists.map((w) => {
+          if (w._id === targetW._id) {
+            const alreadyHas = w.stocks.some((s) => s.symbol.toUpperCase() === symbol.toUpperCase());
+            return alreadyHas ? w : { ...w, stocks: [...w.stocks, { symbol, companyName }] };
+          }
+          return w;
+        });
+        return {
+          watchlists: nextWatchlists,
+          selectedWatchlist: nextWatchlists.find((w) => w._id === state.selectedWatchlist?._id) || nextWatchlists[0] || null,
+        };
+      });
+
+      // 2. BACKEND API CALL
+      try {
+        await addStockApi(targetW._id, { symbol, companyName });
+      } catch (err) {
+        // Rollback on failure
+        set({ watchlists: prevWatchlists, selectedWatchlist: prevSelected, error: err.message });
+      }
+    }
+  },
+
   setSelectedWatchlist: (watchlist) =>
     set({
       selectedWatchlist: watchlist,

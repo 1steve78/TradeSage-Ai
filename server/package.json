@@ -28,6 +28,7 @@
     "nodemon": "^3.1.14",
     "openai": "^6.48.0",
     "otplib": "^13.4.1",
+    "rss-parser": "^3.13.0",
     "smartapi-javascript": "^1.0.27",
     "socket.io": "^4.8.3"
   }

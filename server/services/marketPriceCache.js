@@ -1,19 +1,4 @@
-const initialPrices = {
-  AAPL: 212.5,
-  MSFT: 518.3,
-  NVDA: 182.6,
-  TSLA: 301.2,
-  GOOGL: 178.45,
-  AMZN: 226.9,
-  BTC: 67284.10,
-};
-
-const marketPrices = new Map(
-  Object.entries(initialPrices).map(([symbol, price]) => [
-    symbol,
-    { symbol, price, timestamp: Date.now() }
-  ])
-);
+const marketPrices = new Map();
 
 export const updatePrice = (symbol,data)=>{
     marketPrices.set(symbol,data);

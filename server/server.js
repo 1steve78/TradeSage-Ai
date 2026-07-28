@@ -8,6 +8,7 @@ import { Server } from 'socket.io';
 import app from './app.js'; 
 import connectMongo from './config/database.js'; 
 import {initializeSocket} from './sockets/socketHandler.js'; 
+import { loadInstruments } from './services/marketService.js';
 
 const PORT = process.env.PORT || 5000;
 const httpServer = http.createServer(app);
@@ -28,6 +29,11 @@ const startServer = async () => {
 
     httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      
+      // Warm up the market data cache asynchronously so searches are fast
+      loadInstruments().catch(err => {
+        console.error("Failed to pre-warm market instruments cache:", err.message);
+      });
     });
   } catch (error) {
     console.error('Server startup failed:', error.message);

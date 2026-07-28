@@ -1,55 +1,95 @@
-import axios from "axios";
+import { getInstruments } from "./smartApiService.js";
 
-const finnhub = axios.create({
-    baseURL: "https://finnhub.io/api/v1",
-  
-});
+let instrumentCache = null;
+let lastCacheUpdate = null;
 
-finnhub.interceptors.request.use((config) => {
-    config.headers['X-Finnhub-Token'] = process.env.FINNHUB_API_KEY;
-    return config;
-});
-
-export const searchStocks = async (query) => {
-    // Let's add a sanity check right here to prove the key exists at execution time
-    if (!process.env.FINNHUB_API_KEY) {
-        throw new Error("CRITICAL: API Key is missing inside the service file!");
+/**
+ * Downloads and caches the Angel One OpenAPI Scrip Master.
+ * Refreshes automatically every 24 hours.
+ */
+export const loadInstruments = async () => {
+    if (instrumentCache && lastCacheUpdate && (Date.now() - lastCacheUpdate < 24 * 60 * 60 * 1000)) {
+        return instrumentCache;
     }
+    
+    console.log("[marketService] Downloading SmartAPI instruments database...");
+    try {
+        const data = await getInstruments();
+        // Keep only NSE and BSE equities to reduce memory footprint
+        instrumentCache = data.filter(i => 
+            (i.exch_seg === "NSE" || i.exch_seg === "BSE") && 
+            (i.symbol.endsWith("-EQ") || i.instrumenttype === "")
+        );
+        lastCacheUpdate = Date.now();
+        console.log(`[marketService] Successfully cached ${instrumentCache.length} NSE/BSE instruments.`);
+        return instrumentCache;
+    } catch (error) {
+        console.error("[marketService] Failed to load SmartAPI instruments:", error.message);
+        throw new Error("Unable to load instrument master database.");
+    }
+};
 
+/**
+ * Perform extremely fast offline symbol searches using the cached SmartAPI instrument list.
+ */
+export const searchStocks = async (query) => {
     if (!query || !query.trim()) {
         throw new Error("Search query is required");
     }
     
-    const response = await finnhub.get('/search', {
-        params: {
-            q: query,
-        },
-    });
-
-    const stocks = response.data.result.map((stock) => ({
-        symbol: stock.symbol,
-        companyName: stock.description,
-        exchange: stock.displaySymbol,
-        type: stock.type,
-    }));
-
-    return stocks;
-}
-
-export const getCompanyProfile = async (symbol) => {
-    if (!process.env.FINNHUB_API_KEY) {
-        throw new Error("CRITICAL: API Key is missing inside the service file!");
+    const instruments = await loadInstruments();
+    const upperQuery = query.trim().toUpperCase();
+    
+    const matches = [];
+    for (const inst of instruments) {
+        // Match by symbol or name
+        if (inst.symbol.includes(upperQuery) || inst.name.includes(upperQuery)) {
+            matches.push({
+                symbol: inst.name,         // e.g., TCS
+                companyName: inst.name,
+                exchange: inst.exch_seg,   // e.g., NSE
+                type: inst.instrumenttype || "EQ",
+                token: inst.token          // Important: We return the token directly so the frontend has it
+            });
+            
+            if (matches.length >= 20) break; // limit to 20 results for speed
+        }
     }
+    
+    return matches;
+};
 
+/**
+ * Build a basic company profile from the SmartAPI instrument list.
+ * Note: SmartAPI does not provide logos, industry, or market cap.
+ */
+export const getCompanyProfile = async (symbol) => {
     if (!symbol || !symbol.trim()) {
         throw new Error("Symbol is required");
     }
 
-    const response = await finnhub.get('/stock/profile2', {
-        params: {
-            symbol: symbol,
-        },
-    });
-
-    return response.data;
+    try {
+        const instruments = await loadInstruments();
+        const upperSymbol = symbol.trim().toUpperCase();
+        
+        // Find exact match (prefer NSE)
+        const inst = instruments.find(i => i.name === upperSymbol && i.exch_seg === "NSE") 
+                  || instruments.find(i => i.name === upperSymbol);
+        
+        if (inst) {
+            return {
+                name: inst.name,
+                exchange: inst.exch_seg,
+                token: inst.token,
+                finnhubIndustry: null, // Fallback
+                marketCapitalization: null, // Fallback
+                currency: "INR",
+                logo: null // Fallback
+            };
+        }
+        return {};
+    } catch (error) {
+        console.warn(`[marketService] Failed to fetch company profile for ${symbol}. Returning empty profile.`);
+        return {};
+    }
 };

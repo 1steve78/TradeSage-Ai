@@ -13,6 +13,14 @@ const stockSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    exchange: {
+      type: String,
+      default: "NSE"
+    },
+    token: {
+      type: String,
+      required: false,
+    },
   },
   {
     _id: false,

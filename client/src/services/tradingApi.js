@@ -1,11 +1,12 @@
 import api from "../api/axios";
 
-export const buyStock = async (symbol, companyName, quantity) => {
+export const buyStock = async (symbol, companyName, quantity, price) => {
   try {
     const response = await api.post("/trading/buy", {
       symbol,
       companyName,
       quantity,
+      price,
     });
     return response.data.data;
   } catch (error) {
@@ -16,12 +17,13 @@ export const buyStock = async (symbol, companyName, quantity) => {
   }
 };
 
-export const sellStock = async (symbol, companyName, quantity) => {
+export const sellStock = async (symbol, companyName, quantity, price) => {
   try {
     const response = await api.post("/trading/sell", {
       symbol,
       companyName,
       quantity,
+      price,
     });
     return response.data.data;
   } catch (error) {

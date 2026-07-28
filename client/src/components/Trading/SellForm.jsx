@@ -32,7 +32,7 @@ const SellForm = () => {
       return;
     }
 
-    const res = await sellStock(selectedStock.symbol, selectedStock.companyName, Number(quantity));
+    const res = await sellStock(selectedStock.symbol, selectedStock.companyName, Number(quantity), currentPrice);
     if (res.success) {
       closeModal();
     } else {

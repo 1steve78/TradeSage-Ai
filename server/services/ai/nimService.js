@@ -5,6 +5,7 @@ const getOpenAIClient = () => {
   return new OpenAI({
     baseURL: aiConfig.baseURL || "https://integrate.api.nvidia.com/v1",
     apiKey: aiConfig.apiKey || "dummy_key_for_initialization",
+    timeout: 10000, // Prevent infinite hangs
   });
 };
 

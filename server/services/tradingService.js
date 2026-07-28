@@ -32,32 +32,33 @@ const recalculateMetrics = (portfolio) => {
 // BUY STOCK LOGIC
 // ==========================================
 export const buyStock = async (userId, order) => {
-    const { symbol, companyName, quantity } = order;
+        const { symbol, companyName, quantity, price } = order;
 
-    // 1. Validation
-    if (quantity <= 0) {
-        throw new Error("Invalid quantity");
-    }
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-        // 2. Fetch Portfolio (with self-healing fallback)
-        let portfolio = await Portfolio.findOne({ user: userId }).session(session);
-        if (!portfolio) {
-            portfolio = await Portfolio.create([{ user: userId }], { session });
-            portfolio = portfolio[0];
+        // 1. Validation
+        if (quantity <= 0) {
+            throw new Error("Invalid quantity");
         }
 
-        // 3. Fetch Current Market Price
-        const market = getCurrentPrice(symbol);
-        if (!market) {
-            throw new Error("Market price unavailable");
-        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        const currentPrice = market.price;
-        const totalCost = currentPrice * quantity;
+        try {
+            // 2. Fetch Portfolio (with self-healing fallback)
+            let portfolio = await Portfolio.findOne({ user: userId }).session(session);
+            if (!portfolio) {
+                portfolio = await Portfolio.create([{ user: userId }], { session });
+                portfolio = portfolio[0];
+            }
+
+            // 3. Fetch Current Market Price
+            const market = getCurrentPrice(symbol);
+            const currentPrice = market ? market.price : price;
+            
+            if (!currentPrice) {
+                throw new Error("Market price unavailable");
+            }
+
+            const totalCost = currentPrice * quantity;
 
         // 4. Check Balance
         if (portfolio.cash < totalCost) {
@@ -124,7 +125,7 @@ export const buyStock = async (userId, order) => {
 // SELL STOCK LOGIC
 // ==========================================
 export const sellStock = async (userId, order) => {
-    const { symbol, companyName, quantity } = order;
+    const { symbol, companyName, quantity, price } = order;
 
     // 1. Validation
     if (quantity <= 0) {
@@ -156,11 +157,12 @@ export const sellStock = async (userId, order) => {
 
         // 5. Current Market Price
         const market = getCurrentPrice(symbol);
-        if (!market) {
+        const currentPrice = market ? market.price : price;
+        
+        if (!currentPrice) {
             throw new Error("Market price unavailable");
         }
 
-        const currentPrice = market.price;
         const totalRevenue = currentPrice * quantity;
 
         // Calculate realized profit/loss contribution

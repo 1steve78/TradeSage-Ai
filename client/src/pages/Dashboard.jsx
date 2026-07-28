@@ -29,20 +29,23 @@ const MainChart = () => {
   };
 
   const symbol = selectedStock?.symbol || "AAPL";
+  const cleanSymbol = symbol.replace(/-EQ$/i, "").toUpperCase();
   const name = selectedStock?.companyName || "Apple Inc";
-  const livePrice = prices[symbol]?.price ?? 212.5;
 
   const timeframes = ["1D", "1W", "1M", "3M", "1Y"];
 
   const stockParam = {
     symbol,
-    exchange: symbol === "SBIN" || symbol === "SBIN-EQ" ? "NSE" : null,
-    token: symbol === "SBIN" || symbol === "SBIN-EQ" ? "3045" : null
+    exchange: selectedStock?.exchange || (cleanSymbol === "SBIN" ? "NSE" : cleanSymbol === "TCS" ? "NSE" : cleanSymbol === "RELIANCE" ? "NSE" : null),
+    token: selectedStock?.token || (cleanSymbol === "SBIN" ? "3045" : cleanSymbol === "TCS" ? "11536" : cleanSymbol === "RELIANCE" ? "2885" : null)
   };
 
   const { data: responseData, isLoading: loading, error: queryError } = useHistoricalData(stockParam, timeframe, selectedIndicators);
   const rawData = responseData?.data || [];
   const indicatorData = responseData?.indicators || {};
+  
+  const lastCandle = rawData.length > 0 ? rawData[rawData.length - 1] : null;
+  const livePrice = prices[symbol]?.price ?? prices[cleanSymbol]?.price ?? lastCandle?.close ?? selectedStock?.price ?? (cleanSymbol === "SBIN" ? 842.60 : cleanSymbol === "TCS" ? 3856.00 : cleanSymbol === "RELIANCE" ? 1297.80 : 212.5);
   const error = queryError ? "Historical data unavailable" : null;
 
   const headerLeft = (
@@ -198,7 +201,9 @@ const OrderBookWidget = () => {
   const prices = useMarketStore((state) => state.prices);
 
   const symbol = selectedStock?.symbol || "AAPL";
-  const livePrice = prices[symbol]?.price ?? 212.5;
+  const cleanSymbol = symbol.replace(/-EQ$/i, "").toUpperCase();
+  const livePriceData = prices[symbol] || prices[cleanSymbol];
+  const livePrice = livePriceData?.price ?? selectedStock?.price ?? (cleanSymbol === "SBIN" ? 842.60 : cleanSymbol === "TCS" ? 3856.00 : cleanSymbol === "RELIANCE" ? 1297.80 : 212.5);
 
   const asks = [
     { price: livePrice + 0.03, qty: 1250 },

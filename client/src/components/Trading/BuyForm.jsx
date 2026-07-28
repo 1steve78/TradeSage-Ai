@@ -29,7 +29,7 @@ const BuyForm = () => {
       return;
     }
 
-    const res = await buyStock(selectedStock.symbol, selectedStock.companyName, Number(quantity));
+    const res = await buyStock(selectedStock.symbol, selectedStock.companyName, Number(quantity), currentPrice);
     if (res.success) {
       closeModal();
     } else {
