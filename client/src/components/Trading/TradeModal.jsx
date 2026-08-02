@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import useTradingStore from "../../store/tradingStore";
-import BuyForm from "./BuyForm";
-import SellForm from "./SellForm";
+import OrderForm from "./OrderForm";
 
 const TradeModal = () => {
   const { isTradeModalOpen, tradeType, selectedStock, closeModal } = useTradingStore();
@@ -51,8 +50,8 @@ const TradeModal = () => {
             </button>
           </div>
 
-          {/* Render correct form */}
-          {tradeType === "BUY" ? <BuyForm /> : <SellForm />}
+          {/* Render unified order form */}
+          <OrderForm />
         </motion.div>
       </div>
     </AnimatePresence>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { createChart, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import { createChart } from "lightweight-charts";
 import { getStockHistory } from "../../services/marketApi";
 import useMarketStore from "../../store/marketStore";
 
@@ -27,7 +27,8 @@ const MarketChart = () => {
     token: null
   };
 
-  const { data: rawData, isLoading: loading, error: queryError } = useHistoricalData(stockParam, timeframe);
+  const { data: responseData, isLoading: loading, error: queryError } = useHistoricalData(stockParam, timeframe);
+  const rawData = Array.isArray(responseData?.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
   const error = queryError ? "Historical data unavailable" : null;
 
   useEffect(() => {
@@ -54,7 +55,7 @@ const MarketChart = () => {
       },
     });
 
-    const candleSeries = chart.addSeries(CandlestickSeries, {
+    const candleSeries = chart.addCandlestickSeries({
       upColor: "#10b981",
       downColor: "#ef4444",
       borderUpColor: "#10b981",
@@ -63,7 +64,7 @@ const MarketChart = () => {
       wickDownColor: "#ef4444",
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
+    const volumeSeries = chart.addHistogramSeries({
       color: "#26a69a",
       priceFormat: {
         type: "volume",
@@ -100,7 +101,7 @@ const MarketChart = () => {
 
   // Fetch BTC data
   useEffect(() => {
-    if (rawData && candleSeriesRef.current && volumeSeriesRef.current && chartRef.current) {
+    if (rawData && rawData.length > 0 && candleSeriesRef.current && volumeSeriesRef.current && chartRef.current) {
       const sortedData = [...rawData].sort((a, b) => a.time - b.time);
       
       candleSeriesRef.current.setData(sortedData);
@@ -113,7 +114,7 @@ const MarketChart = () => {
       
       volumeSeriesRef.current.setData(volumeData);
       chartRef.current.timeScale().fitContent();
-    } else if (!rawData && !loading && candleSeriesRef.current && volumeSeriesRef.current) {
+    } else if (!loading && candleSeriesRef.current && volumeSeriesRef.current) {
       candleSeriesRef.current.setData([]);
       volumeSeriesRef.current.setData([]);
     }

@@ -42,14 +42,18 @@ export const searchStocks = async (query) => {
     
     const matches = [];
     for (const inst of instruments) {
-        // Match by symbol or name
-        if (inst.symbol.includes(upperQuery) || inst.name.includes(upperQuery)) {
+        // inst.symbol = "TATAMOTORS-EQ" (NSE trading code with suffix)
+        // inst.name   = display/company name
+        // Strip the "-EQ" suffix to get the clean trading symbol
+        const tradingSymbol = inst.symbol.replace(/-EQ$/, "");
+
+        if (tradingSymbol.includes(upperQuery) || inst.name.toUpperCase().includes(upperQuery)) {
             matches.push({
-                symbol: inst.name,         // e.g., TCS
-                companyName: inst.name,
-                exchange: inst.exch_seg,   // e.g., NSE
+                symbol: tradingSymbol,      // e.g., TATAMOTORS (clean NSE symbol)
+                companyName: inst.name,      // e.g., TATA MOTORS LIMITED
+                exchange: inst.exch_seg,     // e.g., NSE
                 type: inst.instrumenttype || "EQ",
-                token: inst.token          // Important: We return the token directly so the frontend has it
+                token: inst.token            // Angel One scrip token for Smart API calls
             });
             
             if (matches.length >= 20) break; // limit to 20 results for speed

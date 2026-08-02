@@ -1,14 +1,15 @@
 import { useEffect } from "react";
 import usePortfolioStore from "../store/portfolioStore";
 import useMarketStore from "../store/marketStore";
+import PendingOrders from "../components/Portfolio/PendingOrders";
 
 const Portfolio = () => {
-  const { portfolio, fetchPortfolio } = usePortfolioStore();
+  const { portfolio, pendingOrders, fetchDashboard } = usePortfolioStore();
   const prices = useMarketStore((state) => state.prices);
 
   useEffect(() => {
-    fetchPortfolio();
-  }, [fetchPortfolio]);
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   const cash = portfolio?.cash ?? 0;
   const holdings = portfolio?.holdings ?? [];
@@ -294,8 +295,11 @@ const Portfolio = () => {
               <th className="px-lg py-sm border-b border-[#e2e8f0]">Quantity</th>
               <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">Avg Price</th>
               <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">LTP</th>
+              <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">Stop Loss</th>
+              <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">Take Profit</th>
               <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">P&amp;L</th>
               <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">Allocation</th>
+              <th className="px-lg py-sm border-b border-[#e2e8f0] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="text-xs font-semibold">
@@ -310,6 +314,10 @@ const Portfolio = () => {
                 const allocPct = totalPortfolioValue > 0 ? (value / totalPortfolioValue) * 100 : 0;
                 const sector = getSector(h.symbol);
                 const style = getSectorStyle(sector);
+
+                // Find SL and TP orders for this holding
+                const slOrder = pendingOrders.find(o => o.symbol === h.symbol && o.orderType === "STOP_LOSS" && o.side === "SELL");
+                const tpOrder = pendingOrders.find(o => o.symbol === h.symbol && o.orderType === "TAKE_PROFIT" && o.side === "SELL");
 
                 return (
                   <tr key={h.symbol} className="hover:bg-surface-container-low transition-colors">
@@ -334,6 +342,24 @@ const Portfolio = () => {
                       ₹{livePrice.toFixed(2)}
                     </td>
                     <td className="px-lg py-md border-b border-outline-variant/30 text-right">
+                      {slOrder ? (
+                        <span className="font-data-mono text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                          ₹{slOrder.triggerPrice?.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 text-[10px] uppercase font-bold">None</span>
+                      )}
+                    </td>
+                    <td className="px-lg py-md border-b border-outline-variant/30 text-right">
+                      {tpOrder ? (
+                        <span className="font-data-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                          ₹{tpOrder.triggerPrice?.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300 text-[10px] uppercase font-bold">None</span>
+                      )}
+                    </td>
+                    <td className="px-lg py-md border-b border-outline-variant/30 text-right">
                       <span className={`font-data-mono ${pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
                         {pnl >= 0 ? "+" : ""}₹{pnl.toFixed(2)}
                       </span>
@@ -349,6 +375,14 @@ const Portfolio = () => {
                         </div>
                       </div>
                     </td>
+                    <td className="px-lg py-md border-b border-outline-variant/30 text-right align-middle">
+                       <button 
+                         className="text-slate-400 hover:text-slate-700 transition"
+                         title="Manage Position"
+                       >
+                         <span className="material-symbols-outlined text-sm font-bold">more_vert</span>
+                       </button>
+                    </td>
                   </tr>
                 );
               })
@@ -362,6 +396,9 @@ const Portfolio = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pending Orders Table */}
+      <PendingOrders orders={pendingOrders} onCancelSuccess={fetchDashboard} />
     </div>
   );
 };

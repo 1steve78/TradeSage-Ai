@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Portfolio from "../models/Portfolio.js";
 import Transaction from "../models/Transaction.js";
 import { getCurrentPrice } from "./marketPriceCache.js";
+import eventEngine, { EVENTS } from "./notification/eventEngine.js";
 
 // Helper Function: Calculate new average price
 const calculateAveragePrice = (currentQty, currentAvg, newQty, newPrice) => {
@@ -32,7 +33,7 @@ const recalculateMetrics = (portfolio) => {
 // BUY STOCK LOGIC
 // ==========================================
 export const buyStock = async (userId, order) => {
-        const { symbol, companyName, quantity, price } = order;
+        const { symbol, companyName, quantity, price, token, exchange } = order;
 
         // 1. Validation
         if (quantity <= 0) {
@@ -84,6 +85,8 @@ export const buyStock = async (userId, order) => {
                 companyName,
                 quantity,
                 averagePrice: currentPrice,
+                token: token || null,
+                exchange: exchange || "NSE",
             });
         }
 
@@ -99,7 +102,7 @@ export const buyStock = async (userId, order) => {
         await portfolio.save({ session });
 
         // 7. Create Transaction
-        await Transaction.create([{
+        const newTransaction = await Transaction.create([{
             user: userId,
             symbol,
             companyName,
@@ -112,6 +115,18 @@ export const buyStock = async (userId, order) => {
 
         await session.commitTransaction();
         session.endSession();
+
+        // 8. Emit Event
+        eventEngine.emit(EVENTS.ORDER_EXECUTED, {
+            userId,
+            order: {
+                symbol,
+                type: "BUY",
+                quantity,
+                price: currentPrice,
+                _id: newTransaction[0]._id
+            }
+        });
 
         return portfolio;
     } catch (error) {
@@ -189,7 +204,7 @@ export const sellStock = async (userId, order) => {
         await portfolio.save({ session });
 
         // 8. Create Transaction
-        await Transaction.create([{
+        const newTransaction = await Transaction.create([{
             user: userId,
             symbol,
             companyName,
@@ -202,6 +217,18 @@ export const sellStock = async (userId, order) => {
 
         await session.commitTransaction();
         session.endSession();
+
+        // 9. Emit Event
+        eventEngine.emit(EVENTS.ORDER_EXECUTED, {
+            userId,
+            order: {
+                symbol,
+                type: "SELL",
+                quantity,
+                price: currentPrice,
+                _id: newTransaction[0]._id
+            }
+        });
 
         return portfolio;
     } catch (error) {

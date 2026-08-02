@@ -1,5 +1,4 @@
 import { useState } from "react";
-import useDebounce from "../../hooks/useDebounce";
 import useStockSearch from "../../hooks/useStockSearch";
 import useWatchlistStore from "../../store/watchlistStore";
 import useTradingStore from "../../store/tradingStore";
@@ -7,22 +6,24 @@ import SearchDropdown from "./SearchDropdown";
 
 const SearchBar = () => {
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
 
+  // No debounce wrapper needed — useStockSearch handles instant local + debounced remote
   const {
     data: stocks = [],
     isLoading,
     error,
-  } = useStockSearch(debouncedSearch);
+  } = useStockSearch(search);
 
   const { selectedWatchlist, addStock } = useWatchlistStore();
   const { selectStock } = useTradingStore();
 
-  // Keep only the async version of handleStockSelect
   const handleStockSelect = async (stock) => {
+    // Pass token + exchange so StockDetailsPage resolves chart data immediately
     selectStock({
       symbol: stock.symbol,
       companyName: stock.companyName,
+      exchange: stock.exchange || "NSE",
+      token: stock.token || null,
     });
 
     if (selectedWatchlist) {
@@ -30,6 +31,8 @@ const SearchBar = () => {
         await addStock(selectedWatchlist._id, {
           symbol: stock.symbol,
           companyName: stock.companyName,
+          token: stock.token || null,
+          exchange: stock.exchange || "NSE",
         });
       } catch (err) {
         console.error("Auto-add to watchlist failed", err);

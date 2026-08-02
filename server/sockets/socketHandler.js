@@ -2,7 +2,12 @@ import { EVENTS } from "../constants/events.js";
 import { registerMarketEvents, startMarketBroadcast } from "./marketSocket.js";
 import { registerWatchlistEvents } from "./watchlistSocket.js";
 
+let ioInstance;
+
+export const getIO = () => ioInstance;
+
 export const initializeSocket = (io) => {
+  ioInstance = io;
   // Start the global market broadcast loop
   startMarketBroadcast(io);
 

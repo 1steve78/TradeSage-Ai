@@ -14,6 +14,7 @@ const PriorityWatchlist = () => {
     setSelectedWatchlist,
     removeStock,
     createWatchlist,
+    fetchWatchlists,
   } = useWatchlistStore();
 
   const pricesMap = useMarketStore((state) => state.prices);
@@ -21,6 +22,18 @@ const PriorityWatchlist = () => {
   const setSubscribedWatchlist = useMarketStore((state) => state.setSubscribedWatchlist);
   const { joinWatchlist, leaveWatchlist } = useSocket();
   const [showSearch, setShowSearch] = useState(false);
+
+  // Fetch watchlists on mount
+  useEffect(() => {
+    fetchWatchlists();
+  }, [fetchWatchlists]);
+
+  // Set default active watchlist if none is selected yet
+  useEffect(() => {
+    if (!selectedWatchlist && watchlists.length > 0) {
+      setSelectedWatchlist(watchlists[0]);
+    }
+  }, [selectedWatchlist, watchlists, setSelectedWatchlist]);
 
   // Handle Socket.io watchlist room subscription lifecycle
   useEffect(() => {
@@ -35,6 +48,7 @@ const PriorityWatchlist = () => {
       setSubscribedWatchlist(null);
     };
   }, [selectedWatchlist?._id, joinWatchlist, leaveWatchlist, setSubscribedWatchlist]);
+
 
   const handleCreateWatchlist = async () => {
     const name = prompt("Enter new watchlist name:");
@@ -116,9 +130,9 @@ const PriorityWatchlist = () => {
                   <div className="pl-md mt-1 space-y-0.5 border-l border-outline-variant/30 ml-4">
                     {w.stocks.map((stock) => {
                       const live = pricesMap[stock.symbol];
-                      const price = live?.price ?? 212.5;
-                      const prevPrice = live?.previousPrice ?? price;
-                      const isUp = price >= prevPrice;
+                      const price = live?.price ?? null;
+                      const prevPrice = live?.previousPrice ?? null;
+                      const isUp = price !== null && prevPrice !== null ? price >= prevPrice : true;
 
                       return (
                         <div
@@ -128,9 +142,13 @@ const PriorityWatchlist = () => {
                         >
                           <span className="font-semibold text-slate-700">{stock.symbol}</span>
                           <div className="flex items-center gap-2">
-                            <span className={`font-data-mono font-bold ${isUp ? "text-green-600" : "text-rose-600"}`}>
-                              ₹{price.toFixed(2)}
-                            </span>
+                            {price !== null ? (
+                              <span className={`font-data-mono font-bold ${isUp ? "text-green-600" : "text-rose-600"}`}>
+                                ₹{price.toFixed(2)}
+                              </span>
+                            ) : (
+                              <span className="font-data-mono text-slate-400 text-[10px]">—</span>
+                            )}
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();

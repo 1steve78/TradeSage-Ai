@@ -40,10 +40,18 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
         timeScale: {
           borderColor: '#e2e8f0',
           timeVisible: true,
+          // Lock the time axis — no panning past the data boundaries
+          lockVisibleTimeRangeOnResize: true,
+          rightBarStaysOnScroll: false,
+          fixLeftEdge: true,
+          fixRightEdge: true,
         },
         crosshair: {
           mode: 1, // CrosshairMode.Normal
         },
+        // Disable all mouse/touch scrolling and scaling
+        handleScroll: false,
+        handleScale: false,
       });
     } catch (err) {
       console.error('[ChartContainer] createChart failed:', err.message);

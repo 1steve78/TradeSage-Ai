@@ -33,18 +33,18 @@ const HoldingCard = ({ holding }) => {
         {quantity}
       </td>
       <td className="p-4 align-middle text-right font-mono text-xs text-slate-700">
-        ${averagePrice.toFixed(2)}
+        ₹{averagePrice.toFixed(2)}
       </td>
       <td className="p-4 align-middle text-right font-mono text-xs text-[#0f172a]">
-        ${livePrice.toFixed(2)}
+        ₹{livePrice.toFixed(2)}
       </td>
       <td className="p-4 align-middle text-right font-mono text-xs font-bold text-[#0f172a]">
-        ${currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        ₹{currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </td>
       <td className="p-4 align-middle text-right">
         <div className="flex flex-col items-end">
           <span className={`font-mono text-xs font-bold ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-            {pnl >= 0 ? "+" : ""}${pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {pnl >= 0 ? "+" : ""}₹{pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span className={`font-mono text-[9px] font-bold ${pnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
             {pnl >= 0 ? "▲" : "▼"} {Math.abs(pnlPct).toFixed(2)}%

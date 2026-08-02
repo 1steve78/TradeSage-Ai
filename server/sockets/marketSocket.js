@@ -7,6 +7,7 @@ import {
     unsubscribeFromStocks 
 } from "../services/market/smartApiSocketService.js";
 import { updatePrice } from "../services/marketPriceCache.js";
+import { evaluateAlerts, loadActiveAlerts } from "../services/notification/alertEngine.js";
 
 // Hardcoded NIFTY 50 defaults for the "global-market" dashboard ticker
 const GLOBAL_MARKET_STOCKS = [
@@ -47,9 +48,28 @@ export const registerMarketEvents = (socket) => {
     console.log(`Socket ${socket.id} leaving room: ${roomId}`);
     socket.leave(roomId);
   });
+
+  // Handle joining individual stock live feeds
+  socket.on("subscribe-stock", ({ symbol, token, exchange }) => {
+    const roomId = `stock-${symbol}`;
+    console.log(`Socket ${socket.id} joining stock room: ${roomId}`);
+    socket.join(roomId);
+    if (token) {
+      subscribeToStocks([{ symbol, token, exchange }]);
+    }
+  });
+
+  socket.on("unsubscribe-stock", (symbol) => {
+    const roomId = `stock-${symbol}`;
+    console.log(`Socket ${socket.id} leaving stock room: ${roomId}`);
+    socket.leave(roomId);
+  });
 };
 
 export const startMarketBroadcast = async (io) => {
+  // Load alerts into memory on startup
+  await loadActiveAlerts();
+
   // 1. Establish the persistent WebSocket connection with Angel One
   await connectWebSocket();
   
@@ -62,16 +82,22 @@ export const startMarketBroadcast = async (io) => {
       // Save the live price into the cache for AI services to access
       updatePrice(priceUpdate.symbol, priceUpdate);
 
+      // Evaluate price alerts
+      evaluateAlerts({ [priceUpdate.symbol]: priceUpdate });
+
       // 1. Emit to global market tickers room
       io.to("global-market").emit(EVENTS.PRICE_UPDATE, priceUpdate);
+      
+      // 2. Emit to individual stock room
+      io.to(`stock-${priceUpdate.symbol}`).emit(EVENTS.PRICE_UPDATE, priceUpdate);
 
-      // 2. Find watchlists containing the updated stock symbol
+      // 3. Find watchlists containing the updated stock symbol
       const watchlists = await Watchlist.find(
         { "stocks.symbol": priceUpdate.symbol },
         "_id"
       );
 
-      // 3. Emit update only to sockets in those active watchlist rooms
+      // 4. Emit update only to sockets in those active watchlist rooms
       watchlists.forEach((watchlist) => {
         const roomId = watchlist._id.toString();
         io.to(roomId).emit(EVENTS.PRICE_UPDATE, priceUpdate);

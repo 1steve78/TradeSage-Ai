@@ -10,6 +10,11 @@ import portfolioRoutes from "./routes/portfolioRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import newsRoutes from "./routes/newsRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import scannerRoutes from "./routes/scannerRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import preferencesRoutes from "./routes/preferencesRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 const app = express();
 
@@ -42,5 +47,10 @@ app.use("/api/portfolio",portfolioRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api", analyticsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/scanner", scannerRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/preferences", preferencesRoutes);
+app.use("/api/orders", orderRoutes);
 
 export default app;

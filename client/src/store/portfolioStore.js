@@ -3,7 +3,8 @@ import {
   buyStock as buyStockApi,
   sellStock as sellStockApi,
   getPortfolio,
-  getTransactions
+  getTransactions,
+  getOrderDashboard
 } from "../services/tradingApi";
 
 const usePortfolioStore = create((set, get) => ({
@@ -11,6 +12,30 @@ const usePortfolioStore = create((set, get) => ({
   transactions: [],
   loading: false,
   error: null,
+  pendingOrders: [],
+  orderHistory: [],
+  dashboardSummary: null,
+
+  fetchDashboard: async () => {
+    set({ loading: true, error: null });
+    try {
+      const data = await getOrderDashboard();
+      set({ 
+        portfolio: {
+          cash: data.summary.cash,
+          holdings: data.positions,
+          totalInvested: data.summary.totalInvested,
+          totalPnL: data.summary.totalPnL
+        },
+        pendingOrders: data.pendingOrders,
+        orderHistory: data.recentExecutions,
+        dashboardSummary: data.summary,
+        loading: false 
+      });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  },
 
   fetchPortfolio: async () => {
     try {

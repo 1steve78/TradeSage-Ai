@@ -82,6 +82,14 @@
   --radius-lg:      0.25rem;
   --radius-xl:      0.5rem;
   --radius-full:    0.75rem;
+  --radius-custom:  1rem;
+
+  /* ─── Professional Ledger Theme Additions ────────────────────── */
+  --color-brand: #0f172a;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-success-light: #ecfdf5;
+  --color-danger-light: #fef2f2;
 }
 
 /* ─── Global Base ──────────────────────────────────────────────────── */

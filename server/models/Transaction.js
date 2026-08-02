@@ -8,6 +8,12 @@ const transactionSchema = new mongoose.Schema(
       required: true,
     },
 
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: false,
+    },
+
     symbol: {
       type: String,
       required: true,

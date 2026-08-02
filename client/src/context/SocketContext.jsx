@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useCallback, useMemo } from "react";
 import { io } from "socket.io-client";
 import useMarketStore from "../store/marketStore";
 import { EVENTS } from "../constants/events";
@@ -55,19 +55,35 @@ export const SocketProvider = ({ children }) => {
     };
   }, [connect, disconnect, updatePrice, subscribedWatchlist]);
 
-  const joinWatchlist = (id) => {
-    socket.emit(EVENTS.JOIN_ROOM, id);
-  };
+  const joinWatchlist = useCallback((id) => {
+    if (id) socket.emit(EVENTS.JOIN_ROOM, id);
+  }, []);
 
-  const leaveWatchlist = (id) => {
-    socket.emit(EVENTS.LEAVE_ROOM, id);
-  };
+  const leaveWatchlist = useCallback((id) => {
+    if (id) socket.emit(EVENTS.LEAVE_ROOM, id);
+  }, []);
+
+  const joinStockRoom = useCallback((symbol, token, exchange) => {
+    if (symbol) socket.emit("subscribe-stock", { symbol, token, exchange });
+  }, []);
+
+  const leaveStockRoom = useCallback((symbol) => {
+    if (symbol) socket.emit("unsubscribe-stock", symbol);
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    socket,
+    joinWatchlist,
+    leaveWatchlist,
+    joinStockRoom,
+    leaveStockRoom,
+  }), [joinWatchlist, leaveWatchlist, joinStockRoom, leaveStockRoom]);
 
   return (
-    <SocketContext.Provider value={{ socket, joinWatchlist, leaveWatchlist }}>
+    <SocketContext.Provider value={contextValue}>
       {children}
     </SocketContext.Provider>
   );
 };
 
-export const useSocket = () => useContext(SocketContext);
+export const useSocket = () => useContext(SocketContext);

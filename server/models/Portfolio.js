@@ -38,6 +38,16 @@ const holdingSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+
+    token: {
+      type: String,
+      required: false,
+    },
+
+    exchange: {
+      type: String,
+      default: "NSE",
+    },
   },
   {
     _id: false,

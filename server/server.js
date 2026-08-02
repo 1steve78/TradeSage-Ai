@@ -9,6 +9,9 @@ import app from './app.js';
 import connectMongo from './config/database.js'; 
 import {initializeSocket} from './sockets/socketHandler.js'; 
 import { loadInstruments } from './services/marketService.js';
+import './services/notification/notificationService.js';
+import { loadPendingOrders } from './services/orders/pendingOrderService.js';
+import { initializeTriggerEngine } from './services/orders/triggerEngine.js';
 
 const PORT = process.env.PORT || 5000;
 const httpServer = http.createServer(app);
@@ -34,6 +37,10 @@ const startServer = async () => {
       loadInstruments().catch(err => {
         console.error("Failed to pre-warm market instruments cache:", err.message);
       });
+
+      // Initialize Milestone 4 Trigger Engine
+      loadPendingOrders();
+      initializeTriggerEngine();
     });
   } catch (error) {
     console.error('Server startup failed:', error.message);

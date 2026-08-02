@@ -15,6 +15,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import AIInsightsPage from './pages/AIInsightsPage';
 import StockDetailsPage from './pages/StockDetailsPage';
 import MarketExplorer from './components/Stock/MarketExplorer';
+import Scanner from './pages/Scanner';
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -47,6 +48,7 @@ function App() {
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/scanner" element={<Scanner />} />
       </Route>
 
       {/* Catch-all Route */}
