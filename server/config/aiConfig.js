@@ -14,7 +14,7 @@ const aiConfig = {
 
   maxTokens: 500,
 
-  timeout: 30000,
+  timeout: 120000,
 };
 
 export default aiConfig;
