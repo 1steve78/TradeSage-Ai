@@ -85,8 +85,10 @@ export const buildMarketWidget = async () => {
 export const buildRecentActivityWidget = async (userId) => {
     try {
         const transactions = await Transaction.find({ user: userId })
+            .select('symbol type quantity price totalAmount status createdAt')
             .sort({ createdAt: -1 })
-            .limit(5);
+            .limit(5)
+            .lean();
         return transactions || [];
     } catch (error) {
         console.error("[widgetService] Recent Activity Error:", error.message);

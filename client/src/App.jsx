@@ -1,21 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import useAuthStore from './store/authStore';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './layouts/AppLayout';
-import Dashboard from './pages/Dashboard';
-import Portfolio from './pages/Portfolio';
-import Orders from './pages/Orders';
-import Watchlist from './pages/Watchlist';
-import NotFound from './pages/NotFound';
+import PageSkeleton from './components/PageSkeleton';
+import { SkeletonDashboard, SkeletonPortfolio, SkeletonOrders, SkeletonScanner, SkeletonAI } from './components/common/Skeletons';
+import OfflineBanner from './components/common/OfflineBanner';
 
-import AnalyticsPage from './pages/AnalyticsPage';
-import AIInsightsPage from './pages/AIInsightsPage';
-import StockDetailsPage from './pages/StockDetailsPage';
-import MarketExplorer from './components/Stock/MarketExplorer';
-import Scanner from './pages/Scanner';
+// Lazy loaded routes
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Watchlist = lazy(() => import('./pages/Watchlist'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const AIInsightsPage = lazy(() => import('./pages/AIInsightsPage'));
+const StockDetailsPage = lazy(() => import('./pages/StockDetailsPage'));
+const MarketExplorer = lazy(() => import('./components/Stock/MarketExplorer'));
+const Scanner = lazy(() => import('./pages/Scanner'));
 
 function App() {
   const { checkAuth } = useAuthStore();
@@ -25,35 +30,39 @@ function App() {
   }, [checkAuth]);
 
   return (
-    <Routes>
-      {/* Landing Page Route */}
-      <Route path="/" element={<LandingPage />} />
-      
-      {/* Authentication Route */}
-      <Route path="/auth" element={<AuthPage />} />
+    <>
+      <Toaster position="bottom-right" theme="dark" richColors />
+      <OfflineBanner />
+      <Routes>
+        {/* Landing Page Route */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Authentication Route */}
+        <Route path="/auth" element={<AuthPage />} />
 
-      {/* Protected Layout and Routes */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/explorer" element={<MarketExplorer />} />
-        <Route path="/stock/:symbol" element={<StockDetailsPage />} />
-        <Route path="/ai-insights" element={<AIInsightsPage />} />
-        <Route path="/portfolio" element={<Portfolio />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/scanner" element={<Scanner />} />
-      </Route>
+        {/* Protected Layout and Routes */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Suspense fallback={<SkeletonDashboard />}><Dashboard /></Suspense>} />
+            <Route path="/explorer" element={<Suspense fallback={<PageSkeleton />}><MarketExplorer /></Suspense>} />
+            <Route path="/stock/:symbol" element={<Suspense fallback={<PageSkeleton />}><StockDetailsPage /></Suspense>} />
+            <Route path="/ai-insights" element={<Suspense fallback={<SkeletonAI />}><AIInsightsPage /></Suspense>} />
+            <Route path="/portfolio" element={<Suspense fallback={<SkeletonPortfolio />}><Portfolio /></Suspense>} />
+            <Route path="/analytics" element={<Suspense fallback={<PageSkeleton />}><AnalyticsPage /></Suspense>} />
+            <Route path="/orders" element={<Suspense fallback={<SkeletonOrders />}><Orders /></Suspense>} />
+            <Route path="/watchlist" element={<Suspense fallback={<PageSkeleton />}><Watchlist /></Suspense>} />
+            <Route path="/scanner" element={<Suspense fallback={<SkeletonScanner />}><Scanner /></Suspense>} />
+          </Route>
 
-      {/* Catch-all Route */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          {/* Catch-all Route */}
+          <Route path="*" element={<Suspense fallback={<PageSkeleton />}><NotFound /></Suspense>} />
+      </Routes>
+    </>
   );
 }
 

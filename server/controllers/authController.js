@@ -2,107 +2,84 @@ import { registerUser ,loginUser} from "../services/authService.js";
 import { refreshCookieOptions } from "../config/cookieOptions.js";
 import { verifyRefreshToken, generateAccessToken } from "../utils/jwt.js";
 import User from "../models/User.js";
+import catchAsync from "../utils/catchAsync.js";
+import AppError from "../utils/AppError.js";
+import logger from "../infrastructure/logger.js";
 
-export const register = async (req, res) => {
+export const register = catchAsync(async (req, res) => {
     try {
-        // Pass the body down to the service
         const userData = await registerUser(req.body);
-        
-        // Send success response
-        return res.status(201).json(userData);
+        logger.info(`[AUDIT] User registered successfully: ${userData.email}`);
+        return res.status(201).json({ success: true, data: userData });
     } catch (error) {
-        // If the service throws an error (like "User already exists")
         if (error.message === "User already exists") {
-            return res.status(400).json({ message: error.message });
+            logger.warn(`[AUDIT] Failed registration attempt (user exists): ${req.body.email}`);
+            throw new AppError(error.message, 400, "USER_EXISTS");
         }
-        console.error("Error in registration:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        throw error; // Will be caught by catchAsync and globalErrorHandler
     }
-};
+});
 
-export const login =async(req,res)=>{
-    try{
-        const {user,accessToken,refreshToken} = await loginUser(req.body);
-        // Cookie will be added here
-        res.cookie(
-            "refreshToken",
-            refreshToken,
-            refreshCookieOptions
-        );
-        //send response
+export const login = catchAsync(async (req, res) => {
+    try {
+        const { user, accessToken, refreshToken } = await loginUser(req.body);
+        
+        res.cookie("refreshToken", refreshToken, refreshCookieOptions);
+        
+        logger.info(`[AUDIT] User login successful: ${user.email} from IP: ${req.ip}`);
+
         res.status(200).json({
-            success : true,
-            message : "Login successful",
+            success: true,
+            message: "Login successful",
             accessToken,
             user,
         });
-
-    } catch(error){
+    } catch (error) {
         if (error.message === "Invalid credentials") {
-            return res.status(401).json({
-                success: false,
-                message: error.message,
-            });
+            logger.warn(`[AUDIT] Failed login attempt (invalid credentials) for: ${req.body.email} from IP: ${req.ip}`);
+            throw new AppError(error.message, 401, "INVALID_CREDENTIALS");
         }
-        
-        console.error("Error in login:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
+        throw error;
     }
-};
+});
 
-export const getMe = async(req,res)=>{
+export const getMe = catchAsync(async (req, res) => {
     res.status(200).json({
-        success : true,
-        user : req.user,
+        success: true,
+        user: req.user,
     });
-};
+});
 
-export const refreshToken = async (req, res) => {
+export const refreshToken = catchAsync(async (req, res) => {
+    const currentRefreshToken = req.cookies.refreshToken;
+
+    if (!currentRefreshToken) {
+        throw new AppError("No refresh token found", 401, "NO_TOKEN");
+    }
+
     try {
-        // 1. Grab the token from the secure cookie
-        const currentRefreshToken = req.cookies.refreshToken;
-
-        if (!currentRefreshToken) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "No refresh token found" 
-            });
-        }
-
-        // 2. Verify it (this throws an error to the catch block if expired/tampered)
         const decoded = verifyRefreshToken(currentRefreshToken);
-
-        // 3. Ensure the user still actually exists in the database
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).lean();
+        
         if (!user) {
-            return res.status(401).json({ 
-                success: false, 
-                message: "User no longer exists" 
-            });
+            throw new AppError("User no longer exists", 401, "USER_NOT_FOUND");
         }
 
-        // 4. Generate a fresh 15-minute Access Token
         const payload = {
             id: user._id,
             email: user.email
         };
         const newAccessToken = generateAccessToken(payload);
 
-        // 5. Send it back!
+        logger.info(`[AUDIT] Token refreshed for user: ${user.email}`);
+
         return res.status(200).json({
             success: true,
             accessToken: newAccessToken
         });
-
     } catch (error) {
-        console.error("Refresh Token Error:", error.message);
+        logger.warn(`[AUDIT] Failed token refresh attempt from IP: ${req.ip} - ${error.message}`);
         // We use 403 Forbidden here to tell the frontend "Your refresh token is dead, force a log out"
-        return res.status(403).json({ 
-            success: false, 
-            message: "Invalid or expired refresh token" 
-        });
+        throw new AppError("Invalid or expired refresh token", 403, "INVALID_REFRESH_TOKEN");
     }
-};
+});

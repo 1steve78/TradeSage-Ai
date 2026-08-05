@@ -27,9 +27,12 @@ const recalculateMetrics = (portfolio) => {
 };
 
 export const updatePortfolioForExecution = async (userId, symbol, companyName, quantity, price, side, session) => {
-  let portfolio = await Portfolio.findOne({ user: userId }).session(session);
+  let query = Portfolio.findOne({ user: userId });
+  if (session) query = query.session(session);
+  let portfolio = await query;
+  
   if (!portfolio) {
-    portfolio = await Portfolio.create([{ user: userId }], { session });
+    portfolio = await Portfolio.create([{ user: userId }], session ? { session } : undefined);
     portfolio = portfolio[0];
   }
 
@@ -85,7 +88,7 @@ export const updatePortfolioForExecution = async (userId, symbol, companyName, q
   }
 
   recalculateMetrics(portfolio);
-  await portfolio.save({ session });
+  await portfolio.save(session ? { session } : undefined);
   
   return portfolio;
 };

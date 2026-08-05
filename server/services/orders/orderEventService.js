@@ -11,7 +11,7 @@ export const emitOrderEvent = async (event, payload) => {
     const actionText = order.type === "BUY" ? "Bought" : "Sold";
     await Notification.create({
       user: userId,
-      type: "TRADE_EXECUTED",
+      type: "ORDER",
       title: `Order Executed`,
       message: `${actionText} ${order.quantity} ${order.symbol} @ ₹${order.price}`,
       read: false

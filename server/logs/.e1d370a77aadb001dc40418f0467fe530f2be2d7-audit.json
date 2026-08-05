@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "D:\\projects\\Stock Trading\\TradeSage-AI\\server\\logs\\.e1d370a77aadb001dc40418f0467fe530f2be2d7-audit.json",
+    "files": [
+        {
+            "date": 1785952098076,
+            "name": "D:\\projects\\Stock Trading\\TradeSage-AI\\server\\logs\\error-2026-08-05.log",
+            "hash": "07a9aa7cb44abf388353bc22eed4adfc0b587043569d35c7241f7c74a6ea342b"
+        }
+    ],
+    "hashType": "sha256"
+}

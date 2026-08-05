@@ -3,7 +3,7 @@ import { useChart } from './ChartContainer';
 import useMarketStore from '../../store/marketStore';
 import useTradingStore from '../../store/tradingStore';
 
-const CandlestickChart = ({ data = [] }) => {
+const MainChartSeries = ({ data = [], type = 'candlestick' }) => {
   const chart = useChart();
   const seriesRef = useRef(null);
   const priceLineRef = useRef(null);
@@ -14,26 +14,35 @@ const CandlestickChart = ({ data = [] }) => {
   const livePriceData = prices[symbol];
   const currentPrice = livePriceData?.price ?? null;
 
-  // --- Series lifecycle: create / destroy when chart instance changes ---
+  // --- Series lifecycle: create / destroy when chart instance or type changes ---
   useEffect(() => {
     if (!chart) return;
 
-    if (typeof chart.addCandlestickSeries !== 'function') {
-      console.warn('[CandlestickChart] addCandlestickSeries not available on this chart instance.');
-      return;
-    }
-
     try {
-      seriesRef.current = chart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#ef4444',
-        borderUpColor: '#10b981',
-        borderDownColor: '#ef4444',
-        wickUpColor: '#10b981',
-        wickDownColor: '#ef4444',
-      });
+      if (type === 'candlestick') {
+        seriesRef.current = chart.addCandlestickSeries({
+          upColor: '#10b981',
+          downColor: '#ef4444',
+          borderUpColor: '#10b981',
+          borderDownColor: '#ef4444',
+          wickUpColor: '#10b981',
+          wickDownColor: '#ef4444',
+        });
+      } else if (type === 'line') {
+        seriesRef.current = chart.addLineSeries({
+          color: '#2962FF',
+          lineWidth: 2,
+        });
+      } else if (type === 'area') {
+        seriesRef.current = chart.addAreaSeries({
+          lineColor: '#2962FF',
+          topColor: 'rgba(41, 98, 255, 0.28)',
+          bottomColor: 'rgba(41, 98, 255, 0.05)',
+          lineWidth: 2,
+        });
+      }
     } catch (err) {
-      console.warn('[CandlestickChart] addCandlestickSeries failed:', err.message);
+      console.warn('[MainChartSeries] addSeries failed:', err.message);
       return;
     }
 
@@ -44,7 +53,7 @@ const CandlestickChart = ({ data = [] }) => {
         seriesRef.current = null;
       }
     };
-  }, [chart]);
+  }, [chart, type]);
 
   // --- Data sync ---
   useEffect(() => {
@@ -70,13 +79,19 @@ const CandlestickChart = ({ data = [] }) => {
       return tA - tB;
     });
 
+    // Map data for line/area charts which only take `value` (usually close price)
+    const formattedData = type === 'candlestick' ? sortedData : sortedData.map(d => ({
+      time: d.time,
+      value: d.close
+    }));
+
     try {
-      seriesRef.current.setData(sortedData);
+      seriesRef.current.setData(formattedData);
       chart?.timeScale().fitContent();
     } catch (err) {
-      console.warn('[CandlestickChart] setData failed:', err.message);
+      console.warn('[MainChartSeries] setData failed:', err.message);
     }
-  }, [data, chart]);
+  }, [data, chart, type]);
 
   // --- Live price line ---
   useEffect(() => {
@@ -95,11 +110,11 @@ const CandlestickChart = ({ data = [] }) => {
         priceLineRef.current.applyOptions({ price: currentPrice });
       }
     } catch (err) {
-      console.warn('[CandlestickChart] price line error:', err.message);
+      console.warn('[MainChartSeries] price line error:', err.message);
     }
-  }, [currentPrice]);
+  }, [currentPrice, type]);
 
   return null;
 };
 
-export default CandlestickChart;
+export default MainChartSeries;

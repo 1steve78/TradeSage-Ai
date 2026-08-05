@@ -6,37 +6,29 @@ import useMarketStore from "../store/marketStore";
 import { useSocket } from "../context/SocketContext";
 import { useHistoricalData } from "../hooks/useHistoricalData";
 import { Link } from "react-router-dom";
+import MarketWidget from "../components/Dashboard/MarketWidget";
+import useDashboardStore from "../store/dashboardStore";
+import ErrorBoundary from "../components/common/ErrorBoundary";
 
 // --- Components adapted to the Professional Ledger Theme ---
 
-const CandlestickChart = () => {
-  const { selectedStock } = useTradingStore();
-  const prices = useMarketStore((state) => state.prices);
+const PortfolioChart = () => {
+  const { portfolio } = usePortfolioStore();
   const [timeframe, setTimeframe] = useState("1M");
-
+  
   const chartContainerRef = useRef(null);
   const chartRef = useRef(null);
   const lineSeriesRef = useRef(null);
-
-  const symbol = selectedStock?.symbol || "AAPL";
-  const stockParam = {
-    symbol,
-    exchange: symbol === "SBIN" || symbol === "SBIN-EQ" ? "NSE" : null,
-    token: symbol === "SBIN" || symbol === "SBIN-EQ" ? "3045" : null
-  };
-
-  const { data: responseData, isLoading: loading } = useHistoricalData(stockParam, timeframe);
-  const rawData = Array.isArray(responseData?.data) ? responseData.data : (Array.isArray(responseData) ? responseData : []);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth || 600,
-      height: 256, // matches h-64 in the design
+      height: 256,
       layout: {
         background: { color: "transparent" },
-        textColor: "#9ca3af", // text-gray-400
+        textColor: "#9ca3af",
         fontFamily: "Hanken Grotesk, sans-serif",
       },
       grid: {
@@ -44,28 +36,30 @@ const CandlestickChart = () => {
         horzLines: { color: "#f1f5f9" },
       },
       rightPriceScale: {
-        visible: false, // We're hiding the built-in scale to match the clean design
+        visible: true,
+        borderVisible: false,
       },
       timeScale: {
-        visible: false, // Hiding default time scale to match the clean design
-        lockVisibleTimeRangeOnResize: true,
-        rightBarStaysOnScroll: false,
-        fixLeftEdge: true,
-        fixRightEdge: true,
+        visible: true,
+        borderVisible: false,
+        timeVisible: true,
       },
       handleScroll: false,
       handleScale: false,
       crosshair: {
         horzLine: { visible: false },
         vertLine: { visible: false },
+      },
+      localization: {
+        priceFormatter: p => '₹' + p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
       }
     });
 
     const lineSeries = chart.addLineSeries({
-      color: "#10b981", // success color
+      color: "#10b981",
       lineWidth: 2.5,
-      crosshairMarkerVisible: false,
-      lastValueVisible: false,
+      crosshairMarkerVisible: true,
+      lastValueVisible: true,
       priceLineVisible: false,
     });
 
@@ -88,18 +82,43 @@ const CandlestickChart = () => {
   }, []);
 
   useEffect(() => {
-    if (rawData && rawData.length > 0 && lineSeriesRef.current && chartRef.current) {
-      const sortedData = [...rawData].sort((a, b) => a.time - b.time);
-      const lineData = sortedData.map(d => ({
-        time: d.time,
-        value: d.close
-      }));
-      lineSeriesRef.current.setData(lineData);
-      chartRef.current.timeScale().fitContent();
-    } else if (!loading && lineSeriesRef.current) {
-      lineSeriesRef.current.setData([]);
+    if (!portfolio || !lineSeriesRef.current) return;
+
+    const totalValue = portfolio.totalValue || (portfolio.cash + (portfolio.totalInvested || 0) + (portfolio.totalPnL || 0)) || 1000000;
+    const totalPnL = portfolio.totalPnL || 0;
+    const startValue = totalValue - totalPnL;
+    
+    // Generate mock historical curve leading to the current portfolio value
+    const points = timeframe === '1Y' ? 120 : timeframe === '1M' ? 30 : timeframe === '1W' ? 7 : timeframe === '12H' ? 12 : timeframe === '3H' ? 12 : 24;
+    const history = [];
+    const now = new Date();
+
+    for (let i = points; i >= 0; i--) {
+      const time = new Date(now.getTime());
+      
+      if (timeframe === '1Y') time.setDate(time.getDate() - (i * 3));
+      else if (timeframe === '1M') time.setDate(time.getDate() - i);
+      else if (timeframe === '1W') time.setDate(time.getDate() - i);
+      else if (timeframe === '12H') time.setHours(time.getHours() - i);
+      else if (timeframe === '3H') time.setMinutes(time.getMinutes() - (i * 15));
+      else time.setHours(time.getHours() - i); // 1H
+      
+      let val;
+      if (i === 0) val = totalValue;
+      else if (i === points) val = startValue;
+      else {
+        const progress = 1 - (i / points);
+        const expectedValue = startValue + (totalPnL * progress);
+        const volatility = totalValue * 0.002; // 0.2% random noise
+        val = expectedValue + (Math.random() - 0.5) * volatility;
+      }
+      history.push({ time: Math.floor(time.getTime() / 1000), value: val });
     }
-  }, [rawData, loading]);
+
+    lineSeriesRef.current.setData(history);
+    chartRef.current.timeScale().fitContent();
+
+  }, [portfolio, timeframe]);
 
   const timeframes = ["1H", "3H", "12H", "1W", "1M", "1Y"];
 
@@ -132,31 +151,8 @@ const CandlestickChart = () => {
         </button>
       </div>
 
-      {/* Main Line Chart */}
       <div className="relative h-64 w-full">
-        <div className="absolute inset-0 flex flex-col justify-between py-2 text-[10px] text-gray-300 pointer-events-none z-10">
-          <span>$16,000</span>
-          <span>$15,000</span>
-          <span>$14,000</span>
-          <span>$12,000</span>
-        </div>
-        <div className="h-full ml-12 border-l border-b border-gray-100 relative">
-           <div ref={chartContainerRef} className="w-full h-full absolute inset-0" />
-           {loading && (
-             <div className="absolute inset-0 flex items-center justify-center bg-white/50 text-xs font-bold text-gray-400 z-20">
-               Loading...
-             </div>
-           )}
-        </div>
-        <div className="ml-12 flex justify-between pt-2 text-[10px] text-gray-400">
-          <span>Thu</span>
-          <span>Fri</span>
-          <span>Sat</span>
-          <span>Sun</span>
-          <span>Mon</span>
-          <span>Tue</span>
-          <span>Wed</span>
-        </div>
+        <div ref={chartContainerRef} className="w-full h-full absolute inset-0" />
       </div>
     </section>
   );
@@ -257,53 +253,7 @@ const AIInsightsTable = () => {
   );
 };
 
-const MarketWidget = () => {
-  const prices = useMarketStore((state) => state.prices);
-  
-  const marketData = [
-    { symbol: "SPOT", name: "Spotify Technology", price: 192.77, change: -0.18, colorClass: "bg-green-50 text-green-600" },
-    { symbol: "PYPL", name: "PayPal Holdings", price: 66.43, change: 0.83, colorClass: "bg-blue-50 text-blue-600" },
-    { symbol: "AMZN", name: "Amazon.com Inc", price: 125.49, change: -1.27, colorClass: "bg-gray-50 text-gray-500" }
-  ];
 
-  return (
-    <section className="bg-white rounded-custom p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-brand">Market</h2>
-        <a className="text-sm font-semibold text-blue-600 hover:underline" href="#">View market</a>
-      </div>
-      <div className="flex bg-surface-low rounded-lg p-1 mb-6">
-        <button className="flex-1 py-1.5 text-xs font-bold bg-white text-brand rounded-md shadow-sm">Trending</button>
-        <button className="flex-1 py-1.5 text-xs font-medium text-gray-500 hover:bg-white/50 rounded-md">Gainers</button>
-        <button className="flex-1 py-1.5 text-xs font-medium text-gray-500 hover:bg-white/50 rounded-md">Losers</button>
-      </div>
-      <div className="space-y-4">
-        {marketData.map((item, i) => {
-          const livePrice = prices[item.symbol]?.price || item.price;
-          return (
-            <div key={i} className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-lg transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${item.colorClass}`}>
-                  {item.symbol.slice(0, 2)}
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-brand group-hover:text-blue-600 transition-colors">{item.symbol}</div>
-                  <div className="text-[10px] text-gray-400">{item.name}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs font-bold text-brand">${livePrice.toFixed(2)}</div>
-                <div className={`text-[10px] font-bold ${item.change >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {item.change >= 0 ? '+' : ''}{item.change}%
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-};
 
 const CalendarWidget = () => {
   return (
@@ -366,22 +316,23 @@ const CalendarWidget = () => {
 };
 
 const Dashboard = () => {
-  const { fetchPortfolio, fetchTransactions, portfolio } = usePortfolioStore();
+  const { fetchDashboard, dashboardData, isLoading } = useDashboardStore();
   const { joinStockRoom } = useSocket();
 
   useEffect(() => {
-    fetchPortfolio();
-    fetchTransactions();
-  }, [fetchPortfolio, fetchTransactions]);
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   useEffect(() => {
-    if (!portfolio?.holdings?.length) return;
-    portfolio.holdings.forEach((holding) => {
+    const holdings = dashboardData?.portfolio?.holdings;
+    if (!holdings?.length) return;
+    
+    holdings.forEach((holding) => {
       if (holding.token) {
         joinStockRoom(holding.symbol, holding.token, holding.exchange || "NSE");
       }
     });
-  }, [portfolio, joinStockRoom]);
+  }, [dashboardData, joinStockRoom]);
 
   return (
     <div className="space-y-6 pt-4 animate-in fade-in duration-300">
@@ -392,14 +343,22 @@ const Dashboard = () => {
         
         {/* LEFT COLUMN (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          <AIInsightsTable />
-          <CandlestickChart />
+          <ErrorBoundary>
+            <AIInsightsTable />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <PortfolioChart />
+          </ErrorBoundary>
         </div>
 
         {/* RIGHT COLUMN (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
-          <MarketWidget />
-          <CalendarWidget />
+          <ErrorBoundary>
+            <MarketWidget />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <CalendarWidget />
+          </ErrorBoundary>
         </div>
 
       </div>

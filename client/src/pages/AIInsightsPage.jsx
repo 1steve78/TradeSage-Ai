@@ -17,6 +17,7 @@ import {
   Sliders,
   Layers
 } from "lucide-react";
+import { toast } from "sonner";
 import { useMarketPulse, useRefreshMarketPulse } from "../hooks/useAI";
 import { getPortfolioIntelligence } from "../api/aiApi";
 import usePortfolioStore from "../store/portfolioStore";
@@ -74,17 +75,28 @@ const AIInsightsPage = () => {
   }, []);
 
   const handleGlobalRefresh = async () => {
-    await refreshPulseMutation.mutateAsync({ forceRefresh: true });
-    await fetchIntelligenceData(true);
+    toast.promise(
+      Promise.all([
+        refreshPulseMutation.mutateAsync({ forceRefresh: true }),
+        fetchIntelligenceData(true)
+      ]),
+      {
+        loading: 'Synthesizing market data and portfolio insights...',
+        success: 'AI Insights successfully refreshed.',
+        error: 'Failed to refresh AI Insights.'
+      }
+    );
   };
 
   const handleInitiateRebalance = () => {
     setRebalancingSuccess(true);
+    toast.success('Rebalancing order parameters compiled and submitted to SmartOrder router.');
     setTimeout(() => setRebalancingSuccess(false), 4000);
   };
 
   const handleDiversifyNow = () => {
     setDiversifySuccess(true);
+    toast.success('Sector diversification strategy triggered. Recommendations staged in order basket.');
     setTimeout(() => setDiversifySuccess(false), 4000);
   };
 

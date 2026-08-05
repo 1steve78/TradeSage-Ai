@@ -40,6 +40,7 @@ const aiInsightSchema = new mongoose.Schema(
 // Indexes
 aiInsightSchema.index({ contextHash: 1, type: 1 });
 aiInsightSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // MongoDB TTL index
+aiInsightSchema.index({ userId: 1, createdAt: -1 });
 
 const AIInsight = mongoose.model("AIInsight", aiInsightSchema);
 

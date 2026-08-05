@@ -1,13 +1,17 @@
+import WatchlistHeader from "../components/Watchlist/WatchlistHeader";
+import StockList from "../components/Watchlist/StockList";
+
 function Watchlist() {
   return (
-    <section className="bg-white border border-[#e2e8f0] rounded-[4px] p-6 lg:p-8">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-700">Watchlist</p>
-      <h2 className="mt-2 text-xl font-bold text-[#0f172a] tracking-tight">Track symbols that matter</h2>
-      <p className="mt-4 max-w-2xl text-xs text-slate-500 font-medium leading-relaxed">
-        This screen is set up for saved tickers, alerts, and live price panels.
-      </p>
-    </section>
-  )
+    <div className="flex flex-col h-full bg-surface-lowest rounded-custom overflow-hidden shadow-sm border border-gray-100">
+      <WatchlistHeader />
+      
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
+        <StockList />
+      </div>
+    </div>
+  );
 }
 
-export default Watchlist
+export default Watchlist;

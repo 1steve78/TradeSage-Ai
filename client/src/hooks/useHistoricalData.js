@@ -28,6 +28,6 @@ export const useHistoricalData = (stock, interval, indicators = []) => {
             throw new Error("Failed to fetch historical data");
         },
         enabled: isEnabled,
-        staleTime: 1000 * 60,
+        staleTime: 1000 * 60 * 60, // 1 hour
     });
 };

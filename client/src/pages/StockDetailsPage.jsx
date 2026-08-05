@@ -9,10 +9,9 @@ import useStockSearch from "../hooks/useStockSearch";
 import { useSocket } from "../context/SocketContext";
 
 import ChartContainer from "../components/Chart/ChartContainer";
-import CandlestickChartSeries from "../components/Chart/CandlestickChart";
+import MainChartSeries from "../components/Chart/MainChartSeries";
 import VolumeChartSeries from "../components/Chart/VolumeChart";
-import TimeframeSelector from "../components/Chart/TimeframeSelector";
-import IndicatorSelector, { AVAILABLE_INDICATORS } from "../components/Chart/IndicatorSelector";
+import ChartToolbar, { AVAILABLE_INDICATORS } from "../components/Chart/ChartToolbar";
 import IndicatorSeries from "../components/Chart/IndicatorSeries";
 import PriceExplanation from "../components/News/PriceExplanation";
 import NewsBulletinBox from "../components/News/NewsBulletinBox";
@@ -475,6 +474,7 @@ const StockDetailsPage = () => {
   const { joinStockRoom, leaveStockRoom } = useSocket();
 
   const [timeframe, setTimeframe] = useState("1M");
+  const [chartType, setChartType] = useState("candlestick");
   const [selectedIndicators, setSelectedIndicators] = useState(["sma20"]);
   const [orderType, setOrderType] = useState("BUY");
   const [orderCategory, setOrderCategory] = useState("Market Order");
@@ -651,38 +651,35 @@ const StockDetailsPage = () => {
       <div className="grid grid-cols-12 gap-gutter">
         {/* LEFT COLUMN (8 cols): Chart + Technicals + AI Insight + Company Profile */}
         <div className="col-span-12 xl:col-span-8 space-y-gutter">
-          {/* Main Candlestick Chart */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded shadow-xs overflow-hidden">
-            <IndicatorSelector selectedIndicators={selectedIndicators} onToggle={toggleIndicator} />
-            <ChartContainer
-              headerLeft={
-                <span className="font-title-sm text-sm text-[#0f172a] font-bold">
-                  {stockMeta.companyName} ({symbol})
-                </span>
-              }
-              headerRight={
-                <TimeframeSelector
-                  timeframe={timeframe}
-                  setTimeframe={setTimeframe}
-                  timeframes={["1D", "1W", "1M", "1Y"]}
-                />
-              }
-              loading={loadingChart}
-              error={chartError ? "Historical data unavailable" : null}
-            >
-              <CandlestickChartSeries data={rawData} />
-              {selectedIndicators.map((indId) => {
-                const config = AVAILABLE_INDICATORS.find((i) => i.id === indId);
-                return config ? (
-                  <IndicatorSeries
-                    key={indId}
-                    data={indicatorData[indId] || []}
-                    color={config.color}
-                  />
-                ) : null;
-              })}
-              <VolumeChartSeries data={rawData} />
-            </ChartContainer>
+          {/* Main Chart Section */}
+          <div className="bg-surface-container-lowest border border-outline-variant rounded shadow-xs overflow-hidden flex flex-col">
+            <ChartToolbar 
+              chartType={chartType}
+              setChartType={setChartType}
+              timeframe={timeframe}
+              setTimeframe={setTimeframe}
+              selectedIndicators={selectedIndicators}
+              toggleIndicator={toggleIndicator}
+            />
+            <div className="border-t border-outline-variant/30 flex-1 relative">
+              <ChartContainer
+                loading={loadingChart}
+                error={chartError ? "Historical data unavailable" : null}
+              >
+                <MainChartSeries data={rawData} type={chartType} />
+                {selectedIndicators.map((indId) => {
+                  const config = AVAILABLE_INDICATORS.find((i) => i.id === indId);
+                  return config ? (
+                    <IndicatorSeries
+                      key={indId}
+                      data={indicatorData[indId] || []}
+                      color={config.color}
+                    />
+                  ) : null;
+                })}
+                <VolumeChartSeries data={rawData} />
+              </ChartContainer>
+            </div>
           </div>
 
           {/* Technical Analysis & AI Insight Grid */}

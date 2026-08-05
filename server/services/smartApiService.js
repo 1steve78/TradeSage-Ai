@@ -1,6 +1,10 @@
 import { SmartAPI } from "smartapi-javascript";
 import { generate } from "otplib";
 import axios from "axios";
+import CircuitBreaker from "../utils/circuitBreaker.js";
+import marketConfig from "../config/market.config.js";
+
+const smartApiCb = new CircuitBreaker("SmartAPI", marketConfig.smartApi);
 
 let smartApiInstance = null;
 let sessionData = null;
@@ -114,12 +118,14 @@ export const getRawSession = async () => {
  * @param {string} params.todate (Format: YYYY-MM-DD HH:mm)
  */
 export const getHistoricalCandles = async (params) => {
-    const smartApi = await ensureSession();
-    const response = await smartApi.getCandleData(params);
-    if (!response || !response.status) {
-        throw new Error(response?.message || "Failed to fetch historical candles.");
-    }
-    return response.data;
+    return smartApiCb.fire(async () => {
+        const smartApi = await ensureSession();
+        const response = await smartApi.getCandleData(params);
+        if (!response || !response.status) {
+            throw new Error(response?.message || "Failed to fetch historical candles.");
+        }
+        return response.data;
+    }, []);
 };
 
 /**
@@ -129,23 +135,25 @@ export const getHistoricalCandles = async (params) => {
  * @param {string} params.symboltoken (Unique token code)
  */
 export const getLTP = async ({ exchange, symboltoken }) => {
-    const smartApi = await ensureSession();
-    const response = await smartApi.marketData({
-        mode: "LTP",
-        exchangeTokens: {
-            [exchange]: [symboltoken]
+    return smartApiCb.fire(async () => {
+        const smartApi = await ensureSession();
+        const response = await smartApi.marketData({
+            mode: "LTP",
+            exchangeTokens: {
+                [exchange]: [symboltoken]
+            }
+        });
+
+        if (!response || !response.status || !response.data) {
+            throw new Error(response?.message || "Failed to fetch LTP.");
         }
+
+        const fetchedData = response.data.fetched;
+        if (fetchedData && fetchedData.length > 0) {
+            return fetchedData[0];
+        }
+        throw new Error("No LTP data returned for the specified token.");
     });
-
-    if (!response || !response.status || !response.data) {
-        throw new Error(response?.message || "Failed to fetch LTP.");
-    }
-
-    const fetchedData = response.data.fetched;
-    if (fetchedData && fetchedData.length > 0) {
-        return fetchedData[0];
-    }
-    throw new Error("No LTP data returned for the specified token.");
 };
 
 /**
@@ -155,23 +163,25 @@ export const getLTP = async ({ exchange, symboltoken }) => {
  * @param {string} params.symboltoken
  */
 export const getMarketDepth = async ({ exchange, symboltoken }) => {
-    const smartApi = await ensureSession();
-    const response = await smartApi.marketData({
-        mode: "FULL",
-        exchangeTokens: {
-            [exchange]: [symboltoken]
+    return smartApiCb.fire(async () => {
+        const smartApi = await ensureSession();
+        const response = await smartApi.marketData({
+            mode: "FULL",
+            exchangeTokens: {
+                [exchange]: [symboltoken]
+            }
+        });
+
+        if (!response || !response.status || !response.data) {
+            throw new Error(response?.message || "Failed to fetch market depth.");
         }
+
+        const fetchedData = response.data.fetched;
+        if (fetchedData && fetchedData.length > 0) {
+            return fetchedData[0];
+        }
+        throw new Error("No market depth data returned for the specified token.");
     });
-
-    if (!response || !response.status || !response.data) {
-        throw new Error(response?.message || "Failed to fetch market depth.");
-    }
-
-    const fetchedData = response.data.fetched;
-    if (fetchedData && fetchedData.length > 0) {
-        return fetchedData[0];
-    }
-    throw new Error("No market depth data returned for the specified token.");
 };
 
 /**
@@ -179,12 +189,14 @@ export const getMarketDepth = async ({ exchange, symboltoken }) => {
  * @param {Object} params
  */
 export const getOptionChain = async (params) => {
-    const smartApi = await ensureSession();
-    const response = await smartApi.optionGreek(params);
-    if (!response || !response.status) {
-        throw new Error(response?.message || "Failed to fetch option Greeks.");
-    }
-    return response.data;
+    return smartApiCb.fire(async () => {
+        const smartApi = await ensureSession();
+        const response = await smartApi.optionGreek(params);
+        if (!response || !response.status) {
+            throw new Error(response?.message || "Failed to fetch option Greeks.");
+        }
+        return response.data;
+    }, []);
 };
 
 /**

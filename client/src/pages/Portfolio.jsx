@@ -1,7 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import usePortfolioStore from "../store/portfolioStore";
 import useMarketStore from "../store/marketStore";
 import PendingOrders from "../components/Portfolio/PendingOrders";
+import PositionRow from "../components/Portfolio/PositionRow";
+import { EmptyState } from "../components/common/Skeletons";
+import { FolderOpen } from "lucide-react";
 
 const Portfolio = () => {
   const { portfolio, pendingOrders, fetchDashboard } = usePortfolioStore();
@@ -16,21 +19,29 @@ const Portfolio = () => {
   const realizedPnL = portfolio?.totalPnL ?? 0;
 
   // 1. Calculate live totals
-  let totalInvested = 0;
-  let totalCurrentVal = 0;
-
-  holdings.forEach((h) => {
-    const livePrice = prices[h.symbol]?.price ?? h.averagePrice;
-    totalInvested += h.averagePrice * h.quantity;
-    totalCurrentVal += livePrice * h.quantity;
-  });
-
-  const totalPortfolioValue = cash + totalCurrentVal;
-  const unrealizedPnL = totalCurrentVal - totalInvested;
-  const netReturnPct = totalInvested > 0 ? (unrealizedPnL / totalInvested) * 100 : 0;
+  const { totalInvested, totalCurrentVal, totalPortfolioValue, unrealizedPnL, netReturnPct } = useMemo(() => {
+    let inv = 0;
+    let cur = 0;
+    holdings.forEach((h) => {
+      const livePrice = prices[h.symbol]?.price ?? h.averagePrice;
+      inv += h.averagePrice * h.quantity;
+      cur += livePrice * h.quantity;
+    });
+    const totalVal = cash + cur;
+    const unPnl = cur - inv;
+    const netRet = inv > 0 ? (unPnl / inv) * 100 : 0;
+    
+    return {
+      totalInvested: inv,
+      totalCurrentVal: cur,
+      totalPortfolioValue: totalVal,
+      unrealizedPnL: unPnl,
+      netReturnPct: netRet
+    };
+  }, [holdings, prices, cash]);
 
   // 2. Sector Allocation calculations
-  const getSector = (symbol) => {
+  const getSector = useCallback((symbol) => {
     switch (symbol) {
       case "AAPL":
       case "MSFT":
@@ -46,9 +57,9 @@ const Portfolio = () => {
       default:
         return "Other Sector";
     }
-  };
+  }, []);
 
-  const getSectorStyle = (sector) => {
+  const getSectorStyle = useCallback((sector) => {
     switch (sector) {
       case "Technology":
         return { icon: "apps", bg: "bg-primary-container text-white", color: "bg-primary" };
@@ -61,36 +72,34 @@ const Portfolio = () => {
       default:
         return { icon: "account_balance", bg: "bg-slate-100 text-slate-800", color: "bg-slate-500" };
     }
-  };
+  }, []);
 
-  const sectorVal = {};
-  let totalHoldingsVal = 0;
-
-  holdings.forEach((h) => {
-    const livePrice = prices[h.symbol]?.price ?? h.averagePrice;
-    const val = livePrice * h.quantity;
-    totalHoldingsVal += val;
-
-    const sector = getSector(h.symbol);
-    sectorVal[sector] = (sectorVal[sector] || 0) + val;
-  });
-
-  // Include cash as a sector if holdings are empty or to show complete asset split
-  const sectors = Object.entries(sectorVal).map(([name, val]) => ({
-    name,
-    val,
-    pct: totalPortfolioValue > 0 ? (val / totalPortfolioValue) * 100 : 0,
-  })).sort((a, b) => b.val - a.val);
-
-  // Add Cash to allocation breakdown if cash exists
-  if (cash > 0 && totalPortfolioValue > 0) {
-    sectors.push({
-      name: "Cash Reserves",
-      val: cash,
-      pct: (cash / totalPortfolioValue) * 100,
+  const sectors = useMemo(() => {
+    const sectorVal = {};
+    holdings.forEach((h) => {
+      const livePrice = prices[h.symbol]?.price ?? h.averagePrice;
+      const val = livePrice * h.quantity;
+      const sector = getSector(h.symbol);
+      sectorVal[sector] = (sectorVal[sector] || 0) + val;
     });
-  }
-  sectors.sort((a, b) => b.val - a.val);
+
+    // Include cash as a sector if holdings are empty or to show complete asset split
+    const secs = Object.entries(sectorVal).map(([name, val]) => ({
+      name,
+      val,
+      pct: totalPortfolioValue > 0 ? (val / totalPortfolioValue) * 100 : 0,
+    })).sort((a, b) => b.val - a.val);
+
+    // Add Cash to allocation breakdown if cash exists
+    if (cash > 0 && totalPortfolioValue > 0) {
+      secs.push({
+        name: "Cash Reserves",
+        val: cash,
+        pct: (cash / totalPortfolioValue) * 100,
+      });
+    }
+    return secs.sort((a, b) => b.val - a.val);
+  }, [holdings, prices, cash, getSector, totalPortfolioValue]);
 
   return (
     <div className="space-y-lg max-w-[1400px] mx-auto w-full font-sans">
@@ -304,92 +313,24 @@ const Portfolio = () => {
           </thead>
           <tbody className="text-xs font-semibold">
             {holdings.length > 0 ? (
-              holdings.map((h) => {
-                const livePrice = prices[h.symbol]?.price ?? h.averagePrice;
-                const value = livePrice * h.quantity;
-                const cost = h.averagePrice * h.quantity;
-                const pnl = value - cost;
-                const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
-                
-                const allocPct = totalPortfolioValue > 0 ? (value / totalPortfolioValue) * 100 : 0;
-                const sector = getSector(h.symbol);
-                const style = getSectorStyle(sector);
-
-                // Find SL and TP orders for this holding
-                const slOrder = pendingOrders.find(o => o.symbol === h.symbol && o.orderType === "STOP_LOSS" && o.side === "SELL");
-                const tpOrder = pendingOrders.find(o => o.symbol === h.symbol && o.orderType === "TAKE_PROFIT" && o.side === "SELL");
-
-                return (
-                  <tr key={h.symbol} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-lg py-md border-b border-outline-variant/30">
-                      <div className="flex items-center gap-sm">
-                        <div className={`w-8 h-8 rounded flex items-center justify-center ${style.bg}`}>
-                          <span className="material-symbols-outlined text-sm font-bold">{style.icon}</span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-[#0f172a]">{h.companyName}</p>
-                          <p className="text-[10px] font-data-mono text-slate-400 uppercase">{h.symbol}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 font-data-mono text-slate-700">
-                      {h.quantity} Shares
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right font-data-mono text-slate-700">
-                      ₹{h.averagePrice.toFixed(2)}
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right font-data-mono text-[#0f172a]">
-                      ₹{livePrice.toFixed(2)}
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right">
-                      {slOrder ? (
-                        <span className="font-data-mono text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                          ₹{slOrder.triggerPrice?.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-300 text-[10px] uppercase font-bold">None</span>
-                      )}
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right">
-                      {tpOrder ? (
-                        <span className="font-data-mono text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                          ₹{tpOrder.triggerPrice?.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-300 text-[10px] uppercase font-bold">None</span>
-                      )}
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right">
-                      <span className={`font-data-mono ${pnl >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {pnl >= 0 ? "+" : ""}₹{pnl.toFixed(2)}
-                      </span>
-                      <p className={`text-[10px] font-data-mono ${pnl >= 0 ? "text-green-500" : "text-red-500"}`}>
-                        {pnl >= 0 ? "+" : ""}{pnlPct.toFixed(1)}%
-                      </p>
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right align-middle">
-                      <div className="flex items-center gap-2 justify-end">
-                        <span className="font-data-mono text-[10px] text-slate-500">{allocPct.toFixed(0)}%</span>
-                        <div className="w-16 bg-outline-variant/30 h-1.5 rounded-full overflow-hidden">
-                          <div className={`h-full ${style.color}`} style={{ width: `${allocPct}%` }}></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-lg py-md border-b border-outline-variant/30 text-right align-middle">
-                       <button 
-                         className="text-slate-400 hover:text-slate-700 transition"
-                         title="Manage Position"
-                       >
-                         <span className="material-symbols-outlined text-sm font-bold">more_vert</span>
-                       </button>
-                    </td>
-                  </tr>
-                );
-              })
+              holdings.map((h) => (
+                <PositionRow 
+                  key={h.symbol}
+                  h={h}
+                  pendingOrders={pendingOrders}
+                  totalPortfolioValue={totalPortfolioValue}
+                  getSector={getSector}
+                  getSectorStyle={getSectorStyle}
+                />
+              ))
             ) : (
               <tr>
-                <td colSpan="6" className="p-8 text-center text-xs text-slate-400 font-medium">
-                  No active holdings. Place orders on the Dashboard to build your portfolio.
+                <td colSpan="9" className="p-0 border-b-0">
+                  <EmptyState 
+                    icon={FolderOpen}
+                    title="No Active Holdings" 
+                    description="You don't have any open positions. Place orders on the Dashboard to build your portfolio."
+                  />
                 </td>
               </tr>
             )}

@@ -12,7 +12,7 @@ export const recordTransaction = async (transactionData, session) => {
     price: transactionData.price,
     totalAmount: transactionData.totalAmount,
     status: "SUCCESS"
-  }], { session });
+  }], session ? { session } : undefined);
 
   return newTransaction[0];
 };

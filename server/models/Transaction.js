@@ -62,6 +62,8 @@ const transactionSchema = new mongoose.Schema(
   }
 );
 
+transactionSchema.index({ user: 1, symbol: 1, createdAt: -1 });
+
 export default mongoose.model(
   "Transaction",
   transactionSchema

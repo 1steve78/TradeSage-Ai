@@ -11,7 +11,7 @@ export const useChart = () => {
   return useContext(ChartContext); // already null on first render — safe
 };
 
-const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) => {
+const ChartContainer = ({ children, loading, error }) => {
   const chartContainerRef = useRef(null);
   // useState so React re-renders children when the real chart instance arrives.
   // Starts as null so all child series components receive null and bail early.
@@ -84,15 +84,6 @@ const ChartContainer = ({ children, headerLeft, headerRight, loading, error }) =
   return (
     <ChartContext.Provider value={chart}>
       <div className="glass-card rounded flex flex-col h-[400px] bg-white border border-[#e2e8f0]">
-        <div className="p-md border-b border-outline-variant/30 flex items-center justify-between">
-          <div className="flex items-center gap-md">
-            {headerLeft}
-          </div>
-          <div className="flex gap-1 items-center">
-            {headerRight}
-          </div>
-        </div>
-
         <div className="flex-1 p-md relative overflow-hidden bg-white">
           {loading && (
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10 text-xs font-bold text-[#0f172a] font-sans">

@@ -10,7 +10,7 @@ import {
     buildAIWidget
 } from "./widgetService.js";
 import { getPreferences } from "./preferenceService.js";
-import { generateMorningBrief } from "../ai/morningBriefService.js";
+import redisClient from "../../infrastructure/redis.js";
 
 /**
  * Aggregates all dashboard data into a single massive JSON response.
@@ -22,7 +22,7 @@ import { generateMorningBrief } from "../ai/morningBriefService.js";
 export const getDashboard = async (userId, forceRefresh = false) => {
     // 1. Check Cache
     if (!forceRefresh) {
-        const cached = getCachedDashboard(userId);
+        const cached = await getCachedDashboard(userId);
         if (cached) {
             return {
                 ...cached,
@@ -58,7 +58,16 @@ export const getDashboard = async (userId, forceRefresh = false) => {
     ]);
 
     // 2.5 Generate Morning Brief using fetched context
-    const morningBrief = await generateMorningBrief(userId, portfolio, market);
+    // We now fetch the pre-computed morning brief from Redis instead of blocking the request
+    let morningBrief = null;
+    try {
+        const cachedBrief = await redisClient.get(`morning_brief:${userId}`);
+        if (cachedBrief) {
+            morningBrief = JSON.parse(cachedBrief);
+        }
+    } catch (err) {
+        console.error("Failed to fetch morning brief from redis", err);
+    }
 
     // 3. Assemble Payload
     const payload = {
@@ -75,7 +84,7 @@ export const getDashboard = async (userId, forceRefresh = false) => {
     };
 
     // 4. Update Cache
-    setCachedDashboard(userId, payload);
+    await setCachedDashboard(userId, payload);
 
     return {
         ...payload,

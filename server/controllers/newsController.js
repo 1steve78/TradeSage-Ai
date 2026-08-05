@@ -23,6 +23,8 @@ import { getCompanyNews }  from "../services/news/newsProvider.js";
 import { normalizeArticles } from "../services/news/newsNormalizer.js";
 import { analyzeArticles }  from "../services/news/sentimentService.js";
 import NewsCache            from "../models/NewsCache.js";
+import catchAsync from "../utils/catchAsync.js";
+import AppError from "../utils/AppError.js";
 
 // ── GET /api/news/market ───────────────────────────────────────────────────
 
@@ -34,24 +36,16 @@ import NewsCache            from "../models/NewsCache.js";
  *
  * @route GET /api/news/market
  */
-export const getMarketNews = async (req, res) => {
-  try {
-    const category = req.query.category || "general";
-    const articles = await getMarketNewsService(category);
+export const getMarketNews = catchAsync(async (req, res) => {
+  const category = req.query.category || "general";
+  const articles = await getMarketNewsService(category);
 
-    return res.status(200).json({
-      success: true,
-      count:   articles.length,
-      data:    articles,
-    });
-  } catch (error) {
-    console.error("[newsController] getMarketNews error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Unable to fetch market news. Please try again shortly.",
-    });
-  }
-};
+  return res.status(200).json({
+    success: true,
+    count:   articles.length,
+    data:    articles,
+  });
+});
 
 // ── GET /api/news/heat ─────────────────────────────────────────────────────
 
@@ -64,23 +58,15 @@ export const getMarketNews = async (req, res) => {
  *
  * @route GET /api/news/heat
  */
-export const getMarketHeat = async (req, res) => {
-  try {
-    const category = req.query.category || "general";
-    const heat     = await getMarketHeatService(category);
+export const getMarketHeat = catchAsync(async (req, res) => {
+  const category = req.query.category || "general";
+  const heat     = await getMarketHeatService(category);
 
-    return res.status(200).json({
-      success: true,
-      data:    heat,
-    });
-  } catch (error) {
-    console.error("[newsController] getMarketHeat error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Unable to calculate market heat score.",
-    });
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data:    heat,
+  });
+});
 
 // ── GET /api/news/:symbol ─────────────────────────────────────────────────
 
@@ -91,33 +77,22 @@ export const getMarketHeat = async (req, res) => {
  * @route GET /api/news/:symbol
  * @param {string} symbol - Stock ticker (e.g. RELIANCE, INFY)
  */
-export const getStockNews = async (req, res) => {
-  try {
-    const { symbol } = req.params;
+export const getStockNews = catchAsync(async (req, res) => {
+  const { symbol } = req.params;
 
-    if (!symbol || symbol.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Stock symbol is required.",
-      });
-    }
-
-    const articles = await getStockNewsService(symbol.trim().toUpperCase());
-
-    return res.status(200).json({
-      success: true,
-      symbol:  symbol.toUpperCase(),
-      count:   articles.length,
-      data:    articles,
-    });
-  } catch (error) {
-    console.error(`[newsController] getStockNews error (${req.params.symbol}):`, error.message);
-    return res.status(500).json({
-      success: false,
-      message: `Unable to fetch news for ${req.params.symbol}.`,
-    });
+  if (!symbol || symbol.trim().length === 0) {
+    throw new AppError("Stock symbol is required.", 400, "MISSING_SYMBOL");
   }
-};
+
+  const articles = await getStockNewsService(symbol.trim().toUpperCase());
+
+  return res.status(200).json({
+    success: true,
+    symbol:  symbol.toUpperCase(),
+    count:   articles.length,
+    data:    articles,
+  });
+});
 
 // ── GET /api/news/explain/:symbol ──────────────────────────────────────────
 
@@ -128,32 +103,21 @@ export const getStockNews = async (req, res) => {
  * @param {string} symbol - Stock ticker (e.g. RELIANCE, TCS)
  * @query {string} [change] - Optional price change string (e.g. "+3.4%")
  */
-export const explainStockPrice = async (req, res) => {
-  try {
-    const { symbol } = req.params;
-    const priceChange = req.query.change || null;
+export const explainStockPrice = catchAsync(async (req, res) => {
+  const { symbol } = req.params;
+  const priceChange = req.query.change || null;
 
-    if (!symbol || symbol.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Stock symbol is required.",
-      });
-    }
-
-    const explanation = await explainPriceMovement(symbol.trim().toUpperCase(), priceChange);
-
-    return res.status(200).json({
-      success: true,
-      data: explanation,
-    });
-  } catch (error) {
-    console.error(`[newsController] explainStockPrice error (${req.params.symbol}):`, error.message);
-    return res.status(500).json({
-      success: false,
-      message: `Unable to generate price movement explanation for ${req.params.symbol}.`,
-    });
+  if (!symbol || symbol.trim().length === 0) {
+    throw new AppError("Stock symbol is required.", 400, "MISSING_SYMBOL");
   }
-};
+
+  const explanation = await explainPriceMovement(symbol.trim().toUpperCase(), priceChange);
+
+  return res.status(200).json({
+    success: true,
+    data: explanation,
+  });
+});
 
 // ── GET /api/news/dashboard ────────────────────────────────────────────────
 
@@ -162,22 +126,14 @@ export const explainStockPrice = async (req, res) => {
  *
  * @route GET /api/news/dashboard
  */
-export const getNewsDashboard = async (req, res) => {
-  try {
-    const dashboardData = await getNewsDashboardService();
+export const getNewsDashboard = catchAsync(async (req, res) => {
+  const dashboardData = await getNewsDashboardService();
 
-    return res.status(200).json({
-      success: true,
-      data:    dashboardData,
-    });
-  } catch (error) {
-    console.error("[newsController] getNewsDashboard error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Unable to load news dashboard.",
-    });
-  }
-};
+  return res.status(200).json({
+    success: true,
+    data:    dashboardData,
+  });
+});
 
 // ── GET /api/news/search?q= ───────────────────────────────────────────────
 
@@ -187,54 +143,43 @@ export const getNewsDashboard = async (req, res) => {
  * @route GET /api/news/search
  * @query {string} q - Query term (e.g. "TCS", "profit", "AI")
  */
-export const searchNews = async (req, res) => {
-  try {
-    const queryTerm = (req.query.q || "").trim();
-    if (!queryTerm) {
-      return res.status(400).json({
-        success: false,
-        message: "Search query string 'q' is required.",
-      });
-    }
-
-    // Check if query is a stock symbol vs keyword
-    const isSymbol = /^[A-Z0-9]{2,10}$/i.test(queryTerm);
-    let articles = [];
-
-    if (isSymbol) {
-      try {
-        articles = await getStockNewsService(queryTerm.toUpperCase());
-      } catch (e) {
-        articles = [];
-      }
-    }
-
-    // Fallback or broaden search across market news
-    if (articles.length === 0) {
-      const marketArticles = await getMarketNewsService("general");
-      const termLower = queryTerm.toLowerCase();
-      articles = marketArticles.filter(
-        (a) =>
-          (a.title && a.title.toLowerCase().includes(termLower)) ||
-          (a.summary && a.summary.toLowerCase().includes(termLower)) ||
-          (a.source && a.source.toLowerCase().includes(termLower))
-      );
-    }
-
-    return res.status(200).json({
-      success: true,
-      query: queryTerm,
-      count: articles.length,
-      data:  articles,
-    });
-  } catch (error) {
-    console.error("[newsController] searchNews error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Unable to complete news search.",
-    });
+export const searchNews = catchAsync(async (req, res) => {
+  const queryTerm = (req.query.q || "").trim();
+  if (!queryTerm) {
+    throw new AppError("Search query string 'q' is required.", 400, "MISSING_QUERY");
   }
-};
+
+  // Check if query is a stock symbol vs keyword
+  const isSymbol = /^[A-Z0-9]{2,10}$/i.test(queryTerm);
+  let articles = [];
+
+  if (isSymbol) {
+    try {
+      articles = await getStockNewsService(queryTerm.toUpperCase());
+    } catch (e) {
+      articles = [];
+    }
+  }
+
+  // Fallback or broaden search across market news
+  if (articles.length === 0) {
+    const marketArticles = await getMarketNewsService("general");
+    const termLower = queryTerm.toLowerCase();
+    articles = marketArticles.filter(
+      (a) =>
+        (a.title && a.title.toLowerCase().includes(termLower)) ||
+        (a.summary && a.summary.toLowerCase().includes(termLower)) ||
+        (a.source && a.source.toLowerCase().includes(termLower))
+    );
+  }
+
+  return res.status(200).json({
+    success: true,
+    query: queryTerm,
+    count: articles.length,
+    data:  articles,
+  });
+});
 
 // ── GET /api/news/debug/:symbol ───────────────────────────────────────────
 
@@ -338,39 +283,30 @@ export const debugSymbol = async (req, res) => {
  * @route DELETE /api/news/cache/:symbol
  * @param {string} symbol - Stock ticker OR the literal string 'all'
  */
-export const bustCache = async (req, res) => {
-  try {
-    const symbol = (req.params.symbol || "").trim().toUpperCase();
+export const bustCache = catchAsync(async (req, res) => {
+  const symbol = (req.params.symbol || "").trim().toUpperCase();
 
-    let result;
-    let message;
+  let result;
+  let message;
 
-    if (symbol === "ALL") {
-      result  = await NewsCache.deleteMany({});
-      message = `Deleted all ${result.deletedCount} cache entries.`;
-    } else {
-      // Delete both possible key patterns for this symbol
-      result = await NewsCache.deleteMany({
-        cacheKey: { $in: [`company:${symbol}`, `market:${symbol}`] },
-      });
-      message = `Deleted ${result.deletedCount} cache entr${
-        result.deletedCount === 1 ? "y" : "ies"
-      } for symbol "${symbol}".`;
-    }
-
-    return res.status(200).json({
-      success: true,
-      deleted: result.deletedCount,
-      message,
+  if (symbol === "ALL") {
+    result  = await NewsCache.deleteMany({});
+    message = `Deleted all ${result.deletedCount} cache entries.`;
+  } else {
+    // Delete both possible key patterns for this symbol
+    result = await NewsCache.deleteMany({
+      cacheKey: { $in: [`company:${symbol}`, `market:${symbol}`] },
     });
-  } catch (error) {
-    console.error("[newsController] bustCache error:", error.message);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to bust cache.",
-      error:   error.message,
-    });
+    message = `Deleted ${result.deletedCount} cache entr${
+      result.deletedCount === 1 ? "y" : "ies"
+    } for symbol "${symbol}".`;
   }
-};
+
+  return res.status(200).json({
+    success: true,
+    deleted: result.deletedCount,
+    message,
+  });
+});
 
 export default { getMarketNews, getMarketHeat, getStockNews, explainStockPrice, getNewsDashboard, searchNews, debugSymbol, bustCache };

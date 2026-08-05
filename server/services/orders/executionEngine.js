@@ -31,7 +31,7 @@ export const executeMarketOrder = async (order, companyName, currentPrice, sessi
   order.executedPrice = currentPrice;
   order.status = "EXECUTED";
   order.executedAt = new Date();
-  await order.save({ session });
+  await order.save(session ? { session } : undefined);
 
   // 4. Emit Event
   await emitOrderEvent(EVENTS.ORDER_EXECUTED, {

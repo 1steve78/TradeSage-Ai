@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "doctor": "node doctor.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -13,23 +14,35 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@bull-board/api": "^8.6.0",
+    "@bull-board/express": "^8.6.0",
     "@langchain/core": "^1.2.3",
     "@langchain/langgraph": "^1.4.8",
     "@langchain/openai": "^1.5.5",
     "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^6.0.8",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.6.2",
+    "helmet": "^8.3.0",
+    "hpp": "^0.2.3",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
     "nodemon": "^3.1.14",
     "openai": "^6.48.0",
     "otplib": "^13.4.1",
+    "redis": "^6.2.0",
     "rss-parser": "^3.13.0",
     "smartapi-javascript": "^1.0.27",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
   }
 }

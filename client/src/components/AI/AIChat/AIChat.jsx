@@ -4,7 +4,7 @@ import ChatBubble from "./ChatBubble";
 import ChatInput from "./ChatInput";
 import SuggestedQuestions from "./SuggestedQuestions";
 import TypingIndicator from "./TypingIndicator";
-import { Bot, Trash2, RefreshCw, X, Sparkles, History } from "lucide-react";
+import { Bot, Trash2, RefreshCw, X, Sparkles, History, Activity } from "lucide-react";
 
 export default function AIChat({ onClose }) {
   const [messages, setMessages] = useState([]);
@@ -101,8 +101,11 @@ export default function AIChat({ onClose }) {
           <div>
             <h3 className="font-bold text-sm text-slate-800 flex items-center gap-1.5 leading-none">
               TradeSage AI Assistant
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                RAG v2
+              <span 
+                className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200" 
+                title="Responses are grounded in your real-time portfolio data"
+              >
+                Grounded
               </span>
             </h3>
             <p className="text-[11px] text-slate-500 font-medium mt-0.5">
@@ -141,18 +144,18 @@ export default function AIChat({ onClose }) {
             <RefreshCw size={14} className="animate-spin text-primary" /> Loading portfolio history...
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-8 text-center px-4">
+          <div className="flex flex-col items-center justify-center h-full py-8 text-center px-4 w-full">
             <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
-              <Sparkles size={24} />
+              <Activity size={24} />
             </div>
             <h4 className="font-bold text-slate-800 text-base mb-1">
-              Ask TradeSage AI Anything About Your Portfolio
+              Ask TradeSage AI Anything
             </h4>
-            <p className="text-xs text-slate-500 max-w-sm mb-6">
-              Ask about your cash balances, biggest gainers, sector exposure, risk profile, or recent trades.
+            <p className="text-xs text-slate-500 w-full max-w-[320px] mx-auto leading-relaxed mb-6">
+              Ask about balances, gainers, risk, or recent trades.
             </p>
 
-            <SuggestedQuestions onSelectQuestion={handleSendMessage} disabled={loading} />
+            <SuggestedQuestions onSelectQuestion={handleSendMessage} disabled={loading} isGrid={true} />
           </div>
         ) : (
           <>
@@ -181,7 +184,7 @@ export default function AIChat({ onClose }) {
       {/* Suggested Questions Quick Bar (when conversation active) */}
       {messages.length > 0 && !loading && (
         <div className="px-3 py-1.5 bg-white/70 border-t border-slate-100 shrink-0">
-          <SuggestedQuestions onSelectQuestion={handleSendMessage} disabled={loading} />
+          <SuggestedQuestions onSelectQuestion={handleSendMessage} disabled={loading} isGrid={false} />
         </div>
       )}
 

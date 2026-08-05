@@ -22,6 +22,10 @@
  */
 
 import Parser from "rss-parser";
+import CircuitBreaker from "../../utils/circuitBreaker.js";
+import marketConfig from "../../config/market.config.js";
+
+const newsCb = new CircuitBreaker("NewsAPI", marketConfig.newsApi);
 
 const rssParser = new Parser({
   // Some Google RSS feeds set a very short timeout — give it breathing room
@@ -118,21 +122,23 @@ function rssItemToRaw(item) {
  * @returns {Promise<object[]>} Raw article objects (Finnhub-compatible shape)
  */
 async function fetchRss(url, limit = 20) {
-  const feed = await rssParser.parseURL(url);
+  return newsCb.fire(async () => {
+    const feed = await rssParser.parseURL(url);
 
-  if (!feed.items || feed.items.length === 0) return [];
+    if (!feed.items || feed.items.length === 0) return [];
 
-  const rawItems = [];
-  for (const item of feed.items.slice(0, limit)) {
-    const raw = rssItemToRaw(item);
-    if (!raw.headline || !raw.url) {
-      console.warn(`[newsProvider] Dropped item: missing headline or url`, { title: item.title?.slice(0, 50) });
-      continue;
+    const rawItems = [];
+    for (const item of feed.items.slice(0, limit)) {
+      const raw = rssItemToRaw(item);
+      if (!raw.headline || !raw.url) {
+        console.warn(`[newsProvider] Dropped item: missing headline or url`, { title: item.title?.slice(0, 50) });
+        continue;
+      }
+      rawItems.push(raw);
     }
-    rawItems.push(raw);
-  }
 
-  return rawItems;
+    return rawItems;
+  }, []);
 }
 
 // ── Public API (same interface as old Finnhub provider) ───────────────────

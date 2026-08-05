@@ -4,6 +4,8 @@ import ModifyOrderModal from "../components/Orders/ModifyOrderModal";
 import { cancelOrder } from "../services/tradingApi";
 import AnalyticsDashboard from "../components/Dashboard/AnalyticsDashboard";
 import OrderTimeline from "../components/Dashboard/OrderTimeline";
+import { EmptyState } from "../components/common/Skeletons";
+import { PackageOpen } from "lucide-react";
 
 function Orders() {
   const { pendingOrders, orderHistory, fetchDashboard } = usePortfolioStore();
@@ -99,8 +101,12 @@ function Orders() {
             ))
           ) : (
             <tr>
-              <td colSpan={isPending ? 8 : 7} className="p-8 text-center text-xs text-slate-400 font-medium">
-                {isPending ? "No pending orders. Market orders execute immediately." : "No orders found in this category."}
+              <td colSpan={isPending ? 8 : 7} className="p-0 border-b-0">
+                <EmptyState 
+                  icon={PackageOpen}
+                  title={isPending ? "No Pending Orders" : "No Orders Found"} 
+                  description={isPending ? "You have no active pending limit or stop orders. Market orders execute immediately." : "You haven't placed any orders in this category yet."}
+                />
               </td>
             </tr>
           )}

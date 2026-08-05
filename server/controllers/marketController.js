@@ -2,6 +2,9 @@ import { searchStocks, getCompanyProfile } from "../services/marketService.js";
 import { getHistoricalData } from "../services/market/historyService.js";
 import * as smartApiService from "../services/smartApiService.js";
 import { calculateSMA, calculateEMA } from "../services/market/indicatorService.js";
+import { getMarketMovers } from "../services/marketCronService.js";
+import catchAsync from "../utils/catchAsync.js";
+import AppError from "../utils/AppError.js";
 
 // Helper function to format timestamp in seconds to Angel One's expected format "YYYY-MM-DD HH:mm"
 const formatSmartApiDate = (timestampSec) => {
@@ -14,27 +17,20 @@ const formatSmartApiDate = (timestampSec) => {
     return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 };
 
-export const search = async (req, res) => {
-    try {
-        const { q } = req.query;
-        const stocks = await searchStocks(q);
+export const search = catchAsync(async (req, res) => {
+    const { q } = req.query;
+    if (!q) throw new AppError("Search query 'q' is required", 400, "MISSING_QUERY");
 
-        res.status(200).json({
-            success: true,
-            count: stocks.length,
-            data: stocks,
-        });
-    } catch (error) {
-        console.log(error.message);
-        res.status(400).json({
-            success: false,
-            message: error.message,
-        });
-    }
-};
+    const stocks = await searchStocks(q);
 
-export const getStockHistory = async (req, res) => {
-  try {
+    res.status(200).json({
+        success: true,
+        count: stocks.length,
+        data: stocks,
+    });
+});
+
+export const getStockHistory = catchAsync(async (req, res) => {
     const { symbol } = req.params;
     const { interval = "1M", exchange, token, from, to, indicators } = req.query;
 
@@ -55,7 +51,7 @@ export const getStockHistory = async (req, res) => {
         "1M": "ONE_DAY",
       };
 
-      const smartApiInterval = intervalMap[interval] || "ONE_DAY";
+      smartApiInterval = intervalMap[interval] || "ONE_DAY";
 
       let toDateStr, fromDateStr;
       if (from && to) {
@@ -141,24 +137,12 @@ export const getStockHistory = async (req, res) => {
       data: finalCandles,
       indicators: resultIndicators
     });
+});
 
-  } catch (error) {
-    console.error("History Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getQuote = async (req, res) => {
-  try {
+export const getQuote = catchAsync(async (req, res) => {
     const { exchange, token } = req.query;
     if (!exchange || !token) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing exchange or token query parameter."
-      });
+      throw new AppError("Missing exchange or token query parameter.", 400, "MISSING_PARAMETERS");
     }
 
     const ltpData = await smartApiService.getLTP({ exchange, symboltoken: token });
@@ -176,23 +160,12 @@ export const getQuote = async (req, res) => {
         low: ltpData.low
       }
     });
-  } catch (error) {
-    console.error("Quote Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+});
 
-export const getDepth = async (req, res) => {
-  try {
+export const getDepth = catchAsync(async (req, res) => {
     const { exchange, token } = req.query;
     if (!exchange || !token) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing exchange or token query parameter."
-      });
+      throw new AppError("Missing exchange or token query parameter.", 400, "MISSING_PARAMETERS");
     }
 
     const depthData = await smartApiService.getMarketDepth({ exchange, symboltoken: token });
@@ -201,23 +174,12 @@ export const getDepth = async (req, res) => {
       success: true,
       data: depthData
     });
-  } catch (error) {
-    console.error("Market Depth Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+});
 
-export const getOptions = async (req, res) => {
-  try {
+export const getOptions = catchAsync(async (req, res) => {
     const { exchange, token, expiry } = req.query;
     if (!exchange || !token) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing exchange or token query parameter."
-      });
+      throw new AppError("Missing exchange or token query parameter.", 400, "MISSING_PARAMETERS");
     }
 
     const optionData = await smartApiService.getOptionChain({
@@ -230,17 +192,9 @@ export const getOptions = async (req, res) => {
       success: true,
       data: optionData
     });
-  } catch (error) {
-    console.error("Option Chain Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+});
 
-export const getCompanyInfo = async (req, res) => {
-  try {
+export const getCompanyInfo = catchAsync(async (req, res) => {
     const { symbol } = req.params;
     
     // Pass the symbol directly to our new SmartAPI-backed getCompanyProfile
@@ -260,12 +214,12 @@ export const getCompanyInfo = async (req, res) => {
         weburl: null,
       }
     });
+});
 
-  } catch (error) {
-    console.error("Company Info Error:", error);
-    res.status(500).json({
-      success: false,
-      message: error.message
+export const getMarketMoversData = catchAsync(async (req, res) => {
+    const data = getMarketMovers();
+    res.status(200).json({
+      success: true,
+      data: data
     });
-  }
-};
+});

@@ -17,7 +17,7 @@ export const createWatchlist = async (userId,name) => {
 export const getWatchlists = async (userId) => {
     return await Watchlist.find({userId}).sort({
         createdAt : -1,
-    });
+    }).lean();
 };
 
 export const renameWatchlist = async (

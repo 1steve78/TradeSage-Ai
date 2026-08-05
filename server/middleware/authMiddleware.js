@@ -50,3 +50,23 @@ export const protect = async (req, res, next) => {
         });
     }
 };
+
+/**
+ * Admin-only guard.
+ * Must be used AFTER `protect` so req.user is already populated.
+ * In development (NODE_ENV !== 'production') any authenticated user can access
+ * admin routes. In production only users with role === 'admin' are allowed.
+ */
+export const adminProtect = (req, res, next) => {
+    if (process.env.NODE_ENV !== "production") {
+        // Dev convenience: let any logged-in user access bull-board etc.
+        return next();
+    }
+    if (req.user && req.user.role === "admin") {
+        return next();
+    }
+    return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required.",
+    });
+};

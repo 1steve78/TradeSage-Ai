@@ -30,8 +30,17 @@ export const processOrder = async (userId, orderData) => {
     throw new Error(validation.reason);
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let session = null;
+  let useTransactions = true;
+  try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+  } catch (err) {
+      if (session) session.endSession();
+      session = null;
+      useTransactions = false;
+      console.warn("Transactions not supported on this MongoDB instance. Falling back to non-transactional execution.");
+  }
 
   try {
       // 3. Create Order
@@ -40,7 +49,7 @@ export const processOrder = async (userId, orderData) => {
         userId,
         status: "PENDING"
       });
-      await order.save({ session });
+      await order.save(session ? { session } : undefined);
 
       let result;
       // 4. Execution Engine
@@ -51,8 +60,10 @@ export const processOrder = async (userId, orderData) => {
         result = { order };
       }
 
-      await session.commitTransaction();
-      session.endSession();
+      if (useTransactions) {
+          await session.commitTransaction();
+          session.endSession();
+      }
 
       // Add to pending queue after successful transaction commit
       if (order.orderType !== "MARKET") {
@@ -62,8 +73,10 @@ export const processOrder = async (userId, orderData) => {
 
       return result;
   } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      if (useTransactions) {
+          await session.abortTransaction();
+          session.endSession();
+      }
       throw error;
   }
 };

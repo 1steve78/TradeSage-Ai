@@ -32,7 +32,7 @@ export const NewsDashboard = () => {
   } = useQuery({
     queryKey: ["newsDashboard"],
     queryFn: fetchNewsDashboard,
-    staleTime: 5 * 60 * 1000, // 5 minutes cache in memory
+    staleTime: 15 * 60 * 1000, // 15 minutes cache in memory
     refetchOnWindowFocus: false,
   });
 

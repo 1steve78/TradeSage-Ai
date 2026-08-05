@@ -77,7 +77,7 @@ export const StockNews = ({ symbol = "TCS", companyName }) => {
   } = useQuery({
     queryKey: ["stockNews", cleanSymbol],
     queryFn: () => fetchStockNews(cleanSymbol),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
   });
 
   // Local Search & Filter logic

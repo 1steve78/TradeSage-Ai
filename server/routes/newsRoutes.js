@@ -17,6 +17,7 @@
 
 import express                               from "express";
 import { getMarketNews, getMarketHeat, getStockNews, explainStockPrice, getNewsDashboard, searchNews, debugSymbol, bustCache } from "../controllers/newsController.js";
+import { cacheMiddleware } from "../middleware/cacheMiddleware.js";
 
 const router = express.Router();
 
@@ -24,9 +25,9 @@ const router = express.Router();
 // IMPORTANT: /market, /heat, /dashboard, /search, /debug, and /cache must be
 // declared BEFORE /:symbol so Express doesn't treat these as symbol path params.
 
-router.get("/dashboard",       getNewsDashboard);
-router.get("/market",          getMarketNews);
-router.get("/heat",            getMarketHeat);
+router.get("/dashboard",       cacheMiddleware(900), getNewsDashboard);
+router.get("/market",          cacheMiddleware(900), getMarketNews);
+router.get("/heat",            cacheMiddleware(900), getMarketHeat);
 router.get("/search",          searchNews);
 router.get("/explain/:symbol", explainStockPrice);
 
@@ -35,6 +36,6 @@ router.get("/debug/:symbol",   debugSymbol);   // pipeline diagnostic report
 router.delete("/cache/:symbol", bustCache);    // bust stale MongoDB cache
 
 // ── Stock-specific endpoint ───────────────────────────────────────────────
-router.get("/:symbol",         getStockNews);
+router.get("/:symbol",         cacheMiddleware(900), getStockNews);
 
 export default router;

@@ -1,5 +1,9 @@
 import OpenAI from "openai";
 import aiConfig from "../../config/aiConfig.js";
+import { aiConfig as globalAiConfig } from "../../config/ai.config.js";
+import CircuitBreaker from "../../utils/circuitBreaker.js";
+
+const nimCb = new CircuitBreaker("NVIDIA_NIM", globalAiConfig.circuitBreaker);
 
 const getOpenAIClient = () => {
   return new OpenAI({
@@ -46,11 +50,14 @@ export const generateNIMCompletion = async (promptOrMessages, options = {}) => {
       ? [{ role: "user", content: promptOrMessages }]
       : promptOrMessages;
 
-    const response = await openai.chat.completions.create({
-      model: options.model || aiConfig.model || "meta/llama-3.1-70b-instruct",
-      messages: messages,
-      temperature: options.temperature ?? aiConfig.temperature ?? 0.2,
-      max_tokens: options.maxTokens ?? aiConfig.maxTokens ?? 1024,
+    // Use Circuit Breaker to wrap the NIM completion call
+    const response = await nimCb.fire(async () => {
+      return await openai.chat.completions.create({
+        model: options.model || aiConfig.model || "meta/llama-3.1-70b-instruct",
+        messages: messages,
+        temperature: options.temperature ?? aiConfig.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? aiConfig.maxTokens ?? 1024,
+      });
     });
 
     return response.choices[0]?.message?.content || "No explanation returned by NVIDIA NIM.";

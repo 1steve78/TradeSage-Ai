@@ -5,8 +5,8 @@ export const useMarketPulse = () => {
   return useQuery({
     queryKey: ["marketPulse"],
     queryFn: generateMarketPulse,
-    staleTime: 1000 * 60 * 5, // 5 minutes stale time
-    gcTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 30, // 30 minutes stale time
+    gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
   });
 };
@@ -26,7 +26,7 @@ export const useInsightHistory = () => {
   return useQuery({
     queryKey: ["insightHistory"],
     queryFn: getInsightHistory,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
